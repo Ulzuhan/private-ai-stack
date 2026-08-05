@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: yamllint
+        run: pipx run yamllint --strict .
+      - name: shellcheck
+        run: shellcheck scripts/*.sh
+      - name: Validate every compose combination
+        run: |
+          docker compose -f docker-compose.yml config -q
+          docker compose -f docker-compose.yml -f docker-compose.byo.yml config -q
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml config -q
+
+  stack:
+    name: stack
+    runs-on: ubuntu-latest
+    env:
+      COMPOSE_FILE: docker-compose.yml:docker-compose.ci.yml
+      # The default 4B model is too heavy for a GPU-less runner; the tiny
+      # model only proves the circuit, never quality (see docs, phase 5).
+      GENERATION_MODEL: qwen3.5:0.8b
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Report and free disk space
+        run: |
+          df -h /
+          sudo docker system prune -af --volumes > /dev/null
+          df -h /
+
+      - name: Cache Ollama models
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .ci-cache/ollama
+          key: ollama-models-${{ runner.os }}-qwen3.5-0.8b-embeddinggemma-v1
+
+      - name: Start the stack
+        run: docker compose up -d
+
+      - name: Smoke test
+        run: ./scripts/smoke-test.sh
+
+      - name: Service logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Resource usage
+        if: always()
+        run: docker stats --no-stream || true
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+      # The ollama container writes the bind-mounted model store as root;
+      # actions/cache runs as the runner user and must be able to tar it.
+      - name: Make the model cache cacheable
+        if: always()
+        run: |
+          test -d .ci-cache && sudo chown -R "$(id -u):$(id -g)" .ci-cache || true

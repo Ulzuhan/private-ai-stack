@@ -1,0 +1,9 @@
+extends: default
+
+rules:
+  document-start: disable
+  line-length:
+    max: 120
+  truthy:
+    # "on:" in GitHub workflow files is a key, not a boolean.
+    check-keys: false
