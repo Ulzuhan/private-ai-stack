@@ -1,0 +1,11 @@
+# Local configuration and secrets
+.env
+
+# CI model cache (bind-mounted in docker-compose.ci.yml)
+.ci-cache/
+
+# Backup archives
+backups/
+
+# OS noise
+.DS_Store
