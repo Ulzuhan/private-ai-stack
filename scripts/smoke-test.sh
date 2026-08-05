@@ -18,8 +18,9 @@ log "waiting for model-init to finish pulling models"
 # check the exit code, which is the part that actually matters.
 deadline=$((SECONDS + READY_TIMEOUT_SECONDS))
 while :; do
+  # ps --format json emits one JSON object per line, not an array.
   state=$(docker compose ps -a --format json 2>/dev/null |
-    jq -r '.[] | select(.Service=="model-init") | .State' || true)
+    jq -r 'select(.Service=="model-init") | .State' || true)
   [ "$state" = "exited" ] && break
   if ((SECONDS >= deadline)); then
     echo "model-init never finished within ${READY_TIMEOUT_SECONDS}s (state: ${state:-unknown})" >&2
@@ -28,7 +29,7 @@ while :; do
   sleep 3
 done
 exit_code=$(docker compose ps -a --format json |
-  jq -r '.[] | select(.Service=="model-init") | .ExitCode')
+  jq -r 'select(.Service=="model-init") | .ExitCode')
 if [ "$exit_code" != "0" ]; then
   echo "model-init failed (exit code ${exit_code})" >&2
   exit 1
