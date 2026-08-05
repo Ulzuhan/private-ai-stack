@@ -22,7 +22,7 @@ fail() {
 
 # --- docker and compose ------------------------------------------------------
 
-if ! command -v docker > /dev/null 2>&1; then
+if ! command -v docker >/dev/null 2>&1; then
   fail "docker is not installed — https://docs.docker.com/get-docker/"
   echo
   echo "${failures} hard blocker(s) found."
@@ -30,7 +30,7 @@ if ! command -v docker > /dev/null 2>&1; then
 fi
 ok "docker CLI found"
 
-if ! docker info > /dev/null 2>&1; then
+if ! docker info >/dev/null 2>&1; then
   fail "the docker daemon is not running"
 else
   ok "docker daemon is running"
@@ -41,8 +41,8 @@ fi
 version_ge() {
   local IFS=. i h w
   local -a have want
-  read -ra have <<< "$1"
-  read -ra want <<< "$2"
+  read -ra have <<<"$1"
+  read -ra want <<<"$2"
   for ((i = 0; i < ${#want[@]}; i++)); do
     h=${have[i]:-0}
     w=${want[i]:-0}
@@ -52,7 +52,7 @@ version_ge() {
   return 0
 }
 
-compose_version=$(docker compose version --short 2> /dev/null | tr -cd '0-9.' || true)
+compose_version=$(docker compose version --short 2>/dev/null | tr -cd '0-9.' || true)
 if [ -z "$compose_version" ]; then
   fail "docker compose v2 not found (need ${MIN_COMPOSE_VERSION}+)"
 elif version_ge "$compose_version" "$MIN_COMPOSE_VERSION"; then
@@ -66,8 +66,8 @@ fi
 ram_kb=0
 if [ -r /proc/meminfo ]; then
   ram_kb=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)
-elif command -v sysctl > /dev/null 2>&1; then
-  ram_bytes=$(sysctl -n hw.memsize 2> /dev/null || echo 0)
+elif command -v sysctl >/dev/null 2>&1; then
+  ram_bytes=$(sysctl -n hw.memsize 2>/dev/null || echo 0)
   ram_kb=$((ram_bytes / 1024))
 fi
 ram_gb=$((ram_kb / 1024 / 1024))
@@ -103,11 +103,11 @@ if [ "$(uname -s)" = "Darwin" ]; then
   warn "       docker compose -f docker-compose.yml -f docker-compose.byo.yml up -d"
 fi
 
-if command -v nvidia-smi > /dev/null 2>&1; then
+if command -v nvidia-smi >/dev/null 2>&1; then
   ok "NVIDIA GPU detected"
 fi
 
-if curl -fsS --max-time 2 http://localhost:11434/api/version > /dev/null 2>&1; then
+if curl -fsS --max-time 2 http://localhost:11434/api/version >/dev/null 2>&1; then
   warn "a native Ollama is already listening on localhost:11434 — the BYO"
   warn "       override can reuse it instead of the containerized service"
 fi

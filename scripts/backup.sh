@@ -60,8 +60,8 @@ docker compose run --rm --no-deps -T \
   printf '  "collection": "%s",\n' "$COLLECTION"
   printf '  "files": ["reed-backup.tar.gz", "qdrant.snapshot"]\n'
   printf '}\n'
-} > "${dir}/manifest.json"
-docker compose config --images | sort -u > "${dir}/images.txt"
+} >"${dir}/manifest.json"
+docker compose config --images | sort -u >"${dir}/images.txt"
 
 # Simple rotation of timestamped runs; custom labels are left alone.
 if [ "$KEEP_BACKUPS" -gt 0 ]; then

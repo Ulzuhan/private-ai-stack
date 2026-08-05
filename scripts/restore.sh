@@ -60,12 +60,12 @@ docker compose run --rm --no-deps -T \
   reed python /stack-scripts/qdrant-snapshot.py restore "$COLLECTION" /backup/qdrant.snapshot
 
 log "starting reed"
-docker compose start reed > /dev/null
+docker compose start reed >/dev/null
 trap - EXIT
 
 log "waiting for reed to become ready"
 deadline=$((SECONDS + READY_TIMEOUT_SECONDS))
-until curl -fsS "${REED_URL}/ready" > /dev/null 2>&1; do
+until curl -fsS "${REED_URL}/ready" >/dev/null 2>&1; do
   if ((SECONDS >= deadline)); then
     echo "reed never became ready within ${READY_TIMEOUT_SECONDS}s" >&2
     exit 1
