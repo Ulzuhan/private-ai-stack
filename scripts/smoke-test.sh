@@ -24,10 +24,16 @@ until curl -fsS "${REED_URL}/ready" > /dev/null 2>&1; do
   sleep 3
 done
 
-log "checking that open-webui serves"
-code=$(curl -s -o /dev/null -w '%{http_code}' "${WEBUI_URL}/")
+log "waiting for open-webui to serve"
+deadline=$((SECONDS + READY_TIMEOUT_SECONDS))
+code=000
+while ((SECONDS < deadline)); do
+  code=$(curl -s -o /dev/null -w '%{http_code}' "${WEBUI_URL}/" || true)
+  [ "$code" = "200" ] && break
+  sleep 3
+done
 if [ "$code" != "200" ]; then
-  echo "open-webui returned HTTP ${code}" >&2
+  echo "open-webui never served within ${READY_TIMEOUT_SECONDS}s (last: HTTP ${code})" >&2
   exit 1
 fi
 
