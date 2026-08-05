@@ -25,6 +25,9 @@ if [ -e "$dir" ]; then
   exit 1
 fi
 mkdir -p "$dir"
+# Reed runs as its own unprivileged user inside the container; the bind mount
+# must be writable by whatever uid that maps to on this host.
+chmod 0777 "$dir"
 
 # Reed's archive is only consistent while the server is stopped (SQLite), so
 # the service goes down for the duration of the backup and always comes back.

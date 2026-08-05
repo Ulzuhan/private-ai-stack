@@ -25,9 +25,11 @@ jobs:
       - uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567  # v0.3.1
       - name: Re-scan every pinned image
         run: |
+          failed=0
           for image in $(docker compose config --images | sort -u); do
             echo "=== ${image}"
             trivy image --exit-code 1 --ignore-unfixed \
               --scanners vuln --pkg-types os,library \
-              --severity CRITICAL,HIGH "$image"
+              --severity CRITICAL,HIGH "$image" || failed=1
           done
+          exit "$failed"

@@ -35,6 +35,15 @@ jobs:
         run: pipx run yamllint --strict .
       - name: shellcheck
         run: shellcheck scripts/*.sh
+      # shfmt is not preinstalled on the runner; pinned release, checksum
+      # verified — the same supply-chain bar as everything else here.
+      - name: Install shfmt
+        run: |
+          cd "${RUNNER_TEMP}"
+          curl -sSfLO https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_linux_amd64
+          curl -sSfLO https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_checksums.txt
+          grep linux_amd64 shfmt_v3.13.1_checksums.txt | sha256sum -c -
+          sudo install -m 0755 shfmt_v3.13.1_linux_amd64 /usr/local/bin/shfmt
       - name: shfmt
         run: shfmt -d -i 2 scripts/
       - name: Validate every compose combination
@@ -79,12 +88,14 @@ jobs:
       # a repo whose thesis is hardened private AI cannot ship known-bad pins.
       - name: Scan every pinned image
         run: |
+          failed=0
           for image in $(docker compose config --images | sort -u); do
             echo "=== ${image}"
             trivy image --exit-code 1 --ignore-unfixed \
               --scanners vuln --pkg-types os,library \
-              --severity CRITICAL,HIGH "$image"
+              --severity CRITICAL,HIGH "$image" || failed=1
           done
+          exit "$failed"
 
   stack:
     name: stack
