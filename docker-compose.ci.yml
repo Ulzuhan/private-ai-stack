@@ -1,0 +1,8 @@
+# CI-only override: bind-mount the Ollama model store so GitHub Actions can
+# cache it between runs (actions/cache cannot reach into a named volume).
+# Not for regular use — the base file's named volume is the supported setup.
+
+services:
+  ollama:
+    volumes:
+      - ./.ci-cache/ollama:/root/.ollama

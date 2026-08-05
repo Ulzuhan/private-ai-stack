@@ -1,0 +1,136 @@
+name: private-ai-stack
+
+services:
+  # Shared inference for the whole stack. Disabled by the BYO override when a
+  # native Ollama on the host is faster (Metal on Apple Silicon).
+  ollama:
+    image: ollama/ollama:0.32.5@sha256:4dea9fb511947e24a84237bb636b0203abcb2ff0d3fbc7b4ff865deb91362131
+    volumes:
+      - ollama_models:/root/.ollama
+    healthcheck:
+      # The image ships no curl or wget — bash's /dev/tcp is what is available.
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/11434' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  # One-shot bootstrap: pulls the stack's models through the shared Ollama on
+  # first start — this is what keeps `docker compose up -d` a complete command.
+  # Reuses the pinned Ollama image so there is no extra image to pin or scan.
+  model-init:
+    image: ollama/ollama:0.32.5@sha256:4dea9fb511947e24a84237bb636b0203abcb2ff0d3fbc7b4ff865deb91362131
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      GENERATION_MODEL: ${GENERATION_MODEL:-qwen3.5:4b}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-embeddinggemma}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        for model in "$$GENERATION_MODEL" "$$EMBEDDING_MODEL"; do
+          echo "pulling $$model"
+          ollama pull "$$model"
+        done
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+
+  # Vector store for Reed. Not exposed on the host: retrieval goes through
+  # Reed's API, operations go through `docker compose exec qdrant`.
+  qdrant:
+    image: qdrant/qdrant:v1.18.3@sha256:0bd98fa7977f1e75694779359ca4e212822e5a71334e28421182f72f209d5286
+    environment:
+      QDRANT__TELEMETRY_DISABLED: "true"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  # Document RAG with verifiable citations, and one of the stack's two UIs.
+  # Documents go here — not into the chat UI (see open-webui below).
+  reed:
+    image: ghcr.io/ulzuhan/reed:0.4.0@sha256:f34da3c5c2e779a454bc017fa7489581e634dbcd1ba31d3b30cc7401abeca582
+    ports:
+      # Loopback-only. The production override is the supported way to expose
+      # this further; set REED_API_KEY first.
+      - "127.0.0.1:${REED_PORT:-8000}:8000"
+    environment:
+      # Without this Reed starts in its OpenAI profile and the stack silently
+      # stops being local.
+      - REED_PROFILE=local
+      - REED_OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+      - REED_OLLAMA_CHAT_MODEL=${GENERATION_MODEL:-qwen3.5:4b}
+      - REED_OLLAMA_EMBED_MODEL=${EMBEDDING_MODEL:-embeddinggemma}
+      # Bare entries preserve the distinction between unset (Reed's calibrated
+      # preset) and explicitly empty (feature disabled on purpose).
+      - REED_MIN_EVIDENCE_SCORE
+      - REED_EMBED_QUERY_PREFIX
+      - REED_EMBED_DOC_PREFIX
+      - REED_QDRANT_URL=http://qdrant:6333
+      - REED_COLLECTION=${REED_COLLECTION:-reed_chunks}
+      - REED_DATA_DIR=/data
+      - REED_HOST=0.0.0.0
+      - REED_PORT=8000
+      - REED_LOG_LEVEL=${REED_LOG_LEVEL:-INFO}
+      - REED_API_KEY=${REED_API_KEY:-}
+      - REED_TMPFS_SIZE=${REED_TMPFS_SIZE:-64m}
+    volumes:
+      - reed_data:/data
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      # Starlette's upload spool and Reed's staged copy can briefly coexist.
+      - /tmp:size=${REED_TMPFS_SIZE:-64m},mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  # General chat over the shared Ollama — the stack's other UI. Its built-in
+  # RAG stays off so documents always go through Reed's pipeline.
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:v0.11.0@sha256:72c0ba641ba75e7aa52655cb242570906ececd09b1140fb736483038a22b3228
+    ports:
+      - "127.0.0.1:${WEBUI_PORT:-3000}:8080"
+    environment:
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      DEFAULT_MODELS: ${GENERATION_MODEL:-qwen3.5:4b}
+      # Keep configuration in env, not in the database: without this, every
+      # flag below is written once on first boot and silently ignored after.
+      ENABLE_PERSISTENT_CONFIG: "false"
+      # Documents belong to Reed. Uploading here would use Open WebUI's own
+      # RAG and bypass the pipeline this stack is built around.
+      USER_PERMISSIONS_CHAT_FILE_UPLOAD: "false"
+      # No update checks, no external APIs, no telemetry.
+      OFFLINE_MODE: "true"
+      ENABLE_OPENAI_API: "false"
+      SCARF_NO_ANALYTICS: "true"
+      DO_NOT_TRACK: "true"
+      ANONYMIZED_TELEMETRY: "false"
+    volumes:
+      - open_webui_data:/app/backend/data
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  ollama_models:
+  qdrant_storage:
+  reed_data:
+  open_webui_data:

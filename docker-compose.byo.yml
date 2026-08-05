@@ -1,0 +1,28 @@
+# BYO-Ollama override: use a native Ollama on the host instead of the
+# containerized one. On Apple Silicon this is the fast path — Docker has no
+# Metal passthrough, so a containerized Ollama runs CPU-only.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.byo.yml up -d
+#
+# In this mode model management is yours: `ollama pull <model>` on the host.
+
+services:
+  # Parking these behind a profile nobody activates removes them from the
+  # stack without editing the base file.
+  ollama:
+    profiles: ["byo-disabled"]
+  model-init:
+    profiles: ["byo-disabled"]
+
+  open-webui:
+    environment:
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+    extra_hosts:
+      # No-op on Docker Desktop, required on Linux.
+      - "host.docker.internal:host-gateway"
+
+  reed:
+    environment:
+      - REED_OLLAMA_BASE_URL=http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
