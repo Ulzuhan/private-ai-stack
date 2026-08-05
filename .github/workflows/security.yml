@@ -30,6 +30,9 @@ jobs:
             echo "=== ${image}"
             trivy image --exit-code 1 --ignore-unfixed \
               --scanners vuln --pkg-types os,library \
-              --severity CRITICAL,HIGH "$image" || failed=1
+              --severity CRITICAL,HIGH \
+              --format json --output "${RUNNER_TEMP}/trivy-result.json" "$image" || failed=1
+            jq -r '.Results[]?.Vulnerabilities[]? | "\(.VulnerabilityID)\t\(.Severity)\t\(.PkgName)"' \
+              "${RUNNER_TEMP}/trivy-result.json" | sort -u
           done
           exit "$failed"

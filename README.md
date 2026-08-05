@@ -16,7 +16,7 @@ machine: no cloud APIs, no telemetry, models run on your own hardware.
 | [Ollama](https://ollama.com) | `ollama/ollama:0.32.5` | Local inference, shared by the whole stack |
 | [Qdrant](https://qdrant.tech) | `qdrant/qdrant:v1.18.3` | Vector store behind the RAG service |
 | [Open WebUI](https://github.com/open-webui/open-webui) | `open-webui:v0.11.0` | General chat UI |
-| [Reed](https://github.com/Ulzuhan/reed) | `reed:0.4.0` | Document RAG with citations, hybrid retrieval and its own UI |
+| [Reed](https://github.com/Ulzuhan/reed) | `reed:0.4.1` | Document RAG with citations, hybrid retrieval and its own UI |
 
 Every image is pinned by tag **and digest**. Containers run hardened
 (`read_only`, `cap_drop: ALL`, `no-new-privileges` where the service allows

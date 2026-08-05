@@ -35,14 +35,14 @@ jobs:
         run: pipx run yamllint --strict .
       - name: shellcheck
         run: shellcheck scripts/*.sh
-      # shfmt is not preinstalled on the runner; pinned release, checksum
-      # verified — the same supply-chain bar as everything else here.
+      # shfmt is not preinstalled on the runner; pinned release verified
+      # against a hash recorded here — mvdan/sh publishes no checksums file.
       - name: Install shfmt
         run: |
           cd "${RUNNER_TEMP}"
           curl -sSfLO https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_linux_amd64
-          curl -sSfLO https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_checksums.txt
-          grep linux_amd64 shfmt_v3.13.1_checksums.txt | sha256sum -c -
+          echo "fb096c5d1ac6beabbdbaa2874d025badb03ee07929f0c9ff67563ce8c75398b1  shfmt_v3.13.1_linux_amd64" \
+            | sha256sum -c -
           sudo install -m 0755 shfmt_v3.13.1_linux_amd64 /usr/local/bin/shfmt
       - name: shfmt
         run: shfmt -d -i 2 scripts/
@@ -93,7 +93,10 @@ jobs:
             echo "=== ${image}"
             trivy image --exit-code 1 --ignore-unfixed \
               --scanners vuln --pkg-types os,library \
-              --severity CRITICAL,HIGH "$image" || failed=1
+              --severity CRITICAL,HIGH \
+              --format json --output "${RUNNER_TEMP}/trivy-result.json" "$image" || failed=1
+            jq -r '.Results[]?.Vulnerabilities[]? | "\(.VulnerabilityID)\t\(.Severity)\t\(.PkgName)"' \
+              "${RUNNER_TEMP}/trivy-result.json" | sort -u
           done
           exit "$failed"
 

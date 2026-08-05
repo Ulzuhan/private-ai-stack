@@ -67,7 +67,7 @@ services:
   # Document RAG with verifiable citations, and one of the stack's two UIs.
   # Documents go here — not into the chat UI (see open-webui below).
   reed:
-    image: ghcr.io/ulzuhan/reed:0.4.0@sha256:f34da3c5c2e779a454bc017fa7489581e634dbcd1ba31d3b30cc7401abeca582
+    image: ghcr.io/ulzuhan/reed:0.4.1@sha256:e835e02c55f1a838de7b2f7c59c6d855ccb69e4d71ed6a879e3a4f4037aea565
     ports:
       # Loopback-only. The production override is the supported way to expose
       # this further; set REED_API_KEY first.

@@ -41,9 +41,17 @@ docker compose run --rm --no-deps -T \
   reed sh -c 'find /data -mindepth 1 -delete'
 
 log "restoring reed archive from ${archive}"
+# Reed's restore builds a scratch directory next to REED_DATA_DIR and renames
+# it into place. With the service's read-only rootfs that scratch lands on /
+# and fails, so the volume is mounted at /restore instead and REED_DATA_DIR
+# pointed inside it: scratch and target then share the volume's filesystem.
 docker compose run --rm --no-deps -T \
+  --volume reed_data:/restore \
   --volume "$PWD/${dir}:/backup:ro" \
-  reed reed backup restore /backup/reed-backup.tar.gz
+  -e REED_DATA_DIR=/restore/data \
+  reed sh -c 'reed backup restore /backup/reed-backup.tar.gz \
+    && (mv /restore/data/* /restore/data/.[!.]* /restore/ 2> /dev/null || true) \
+    && rmdir /restore/data'
 
 log "restoring qdrant snapshot into ${COLLECTION}"
 docker compose run --rm --no-deps -T \
