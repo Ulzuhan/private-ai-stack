@@ -1,0 +1,101 @@
+# Trivy allowlist — justified exceptions, reviewed 2026-08-05.
+#
+# Rule: every image in the compose files is pinned at the LATEST release its
+# upstream publishes. The findings below have fixed versions upstream, but no
+# patched image exists to pin. Ignoring them is the honest alternative to
+# inventing a fix that does not exist; it is not permission to relax.
+#
+# Exposure context: every service binds loopback only, runs with
+# no-new-privileges (cap_drop where the service allows it), and telemetry off.
+#
+# This file must shrink, never grow:
+# - security.yml re-scans the same digests weekly, so a CVE fixed in a new
+#   release is caught even between PRs;
+# - Dependabot (docker-compose ecosystem) proposes the bumps that let entries
+#   be deleted here;
+# - any new finding fails CI until it is either fixed by a bump or justified
+#   in this file with the same rigor.
+
+# --- ollama/ollama:0.32.5 (latest release) ----------------------------------
+# Go stdlib and golang.org/x/* findings, fixed in newer Go toolchains; Ollama
+# has not shipped a rebuilt release. The API is reachable only from the
+# stack's own network (no host port published).
+CVE-2026-25679
+CVE-2026-25681
+CVE-2026-27136
+CVE-2026-27137
+CVE-2026-27145
+CVE-2026-32280
+CVE-2026-32281
+CVE-2026-32283
+CVE-2026-32285
+CVE-2026-33810
+CVE-2026-33811
+CVE-2026-33814
+CVE-2026-39820
+CVE-2026-39821
+CVE-2026-39822
+CVE-2026-39828
+CVE-2026-39829
+CVE-2026-39830
+CVE-2026-39831
+CVE-2026-39832
+CVE-2026-39835
+CVE-2026-39836
+CVE-2026-42499
+CVE-2026-42504
+CVE-2026-42508
+CVE-2026-46595
+CVE-2026-46597
+CVE-2026-46602
+CVE-2026-46604
+CVE-2026-56852
+
+# --- ghcr.io/open-webui/open-webui:v0.11.0 (latest release) -----------------
+# Python dependency findings (aiohttp, pillow, pyarrow, pypdf, wheel, ...),
+# fixed upstream but not yet shipped in an Open WebUI image. Loopback-only;
+# file upload (its internal RAG door) is disabled by configuration.
+CVE-2026-12061
+CVE-2026-12072
+CVE-2026-12074
+CVE-2026-12075
+CVE-2026-23949
+CVE-2026-24049
+CVE-2026-25087
+CVE-2026-54058
+CVE-2026-54059
+CVE-2026-54060
+CVE-2026-54293
+CVE-2026-55379
+CVE-2026-55380
+CVE-2026-59197
+CVE-2026-59199
+CVE-2026-59200
+CVE-2026-59204
+CVE-2026-59205
+CVE-2026-59935
+CVE-2026-59936
+CVE-2026-59950
+CVE-2026-69244
+CVE-2026-69247
+CVE-2026-69249
+GHSA-537c-gmf6-5ccf
+
+# --- qdrant/qdrant:v1.18.3 (latest release) ---------------------------------
+# Dashboard npm dependencies, Rust crates (pyo3, quinn-proto) and tar —
+# including CVE-2026-59873 (CRITICAL, tar). Qdrant publishes no host port;
+# access goes through Reed's API or `docker compose exec`.
+CVE-2026-13149
+CVE-2026-14257
+CVE-2026-59869
+CVE-2026-59873
+CVE-2026-59874
+CVE-2026-69152
+GHSA-36hh-v3qg-5jq4
+GHSA-4w2j-m93h-cj5j
+GHSA-gcfj-64vw-6mp9
+GHSA-r28c-9q8g-f849
+
+# --- ghcr.io/ulzuhan/reed:0.4.1 ---------------------------------------------
+# Clean as of 2026-08-05 — no exceptions needed, and the bar it sets is the
+# one this file is expected to converge to.

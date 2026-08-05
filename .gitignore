@@ -9,3 +9,7 @@ backups/
 
 # OS noise
 .DS_Store
+
+# Python tooling
+__pycache__/
+.venv/

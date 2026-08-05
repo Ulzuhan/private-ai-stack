@@ -1,0 +1,20 @@
+[project]
+name = "private-ai-stack"
+version = "0.0.0"
+description = "Test tooling for the private-ai-stack repository — not a distributable package."
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.uv]
+# Tests are the only Python in this repo; there is nothing to package.
+package = false
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4",
+    "pyyaml>=6.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"

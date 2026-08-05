@@ -15,6 +15,8 @@ services:
       retries: 12
       start_period: 10s
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
 
   # One-shot bootstrap: pulls the stack's models through the shared Ollama on
   # first start — this is what keeps `docker compose up -d` a complete command.
@@ -37,6 +39,10 @@ services:
       ollama:
         condition: service_healthy
     restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
   # Vector store for Reed. Not exposed on the host: retrieval goes through
   # Reed's API, operations go through `docker compose exec qdrant`.
@@ -53,11 +59,15 @@ services:
       retries: 10
       start_period: 5s
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
   # Document RAG with verifiable citations, and one of the stack's two UIs.
   # Documents go here — not into the chat UI (see open-webui below).
   reed:
-    image: ghcr.io/ulzuhan/reed:0.4.0@sha256:f34da3c5c2e779a454bc017fa7489581e634dbcd1ba31d3b30cc7401abeca582
+    image: ghcr.io/ulzuhan/reed:0.4.1@sha256:e835e02c55f1a838de7b2f7c59c6d855ccb69e4d71ed6a879e3a4f4037aea565
     ports:
       # Loopback-only. The production override is the supported way to expose
       # this further; set REED_API_KEY first.
@@ -87,6 +97,21 @@ services:
     depends_on:
       qdrant:
         condition: service_healthy
+    healthcheck:
+      # Same probe the Reed image ships as its own HEALTHCHECK, repeated here
+      # so compose-level orchestration (and `docker compose ps`) can see it.
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request,sys; sys.exit(0 if
+          urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=4).status
+          == 200 else 1)
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 10s
     restart: unless-stopped
     init: true
     read_only: true
@@ -128,6 +153,8 @@ services:
       retries: 12
       start_period: 30s
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
 
 volumes:
   ollama_models:
