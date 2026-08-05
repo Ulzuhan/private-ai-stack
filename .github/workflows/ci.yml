@@ -9,6 +9,10 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Syncs must never rewrite the lockfile; only a deliberate `uv lock` may.
+  UV_FROZEN: "1"
+
 permissions:
   contents: read
 
@@ -20,15 +24,67 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9  # v7
+        with:
+          enable-cache: true
+          cache-suffix: lint
+      # The global UV_FROZEN would downgrade --check to a validity-only test.
+      - name: uv lockfile is current
+        run: env -u UV_FROZEN uv lock --check
       - name: yamllint
         run: pipx run yamllint --strict .
       - name: shellcheck
         run: shellcheck scripts/*.sh
+      - name: shfmt
+        run: shfmt -d -i 2 scripts/
       - name: Validate every compose combination
         run: |
           docker compose -f docker-compose.yml config -q
           docker compose -f docker-compose.yml -f docker-compose.byo.yml config -q
           docker compose -f docker-compose.yml -f docker-compose.ci.yml config -q
+
+  meta:
+    name: meta
+    runs-on: ubuntu-latest
+    env:
+      # test_workflows.py reads main's required checks through the rules API.
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9  # v7
+        with:
+          enable-cache: true
+          cache-suffix: meta
+      - run: uv sync --group dev
+      - run: uv run pytest tests/meta
+
+  security:
+    name: security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          # gitleaks scans the full history.
+          fetch-depth: 0
+      - name: Scan repository history for secrets
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e  # v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567  # v0.3.1
+      # The image list comes from the compose file itself, so a bump there can
+      # never silently escape the scan. Blocking on CRITICAL/HIGH is the point:
+      # a repo whose thesis is hardened private AI cannot ship known-bad pins.
+      - name: Scan every pinned image
+        run: |
+          for image in $(docker compose config --images | sort -u); do
+            echo "=== ${image}"
+            trivy image --exit-code 1 --ignore-unfixed \
+              --scanners vuln --pkg-types os,library \
+              --severity CRITICAL,HIGH "$image"
+          done
 
   stack:
     name: stack
@@ -61,6 +117,17 @@ jobs:
       - name: Smoke test
         run: ./scripts/smoke-test.sh
 
+      # A backup script nobody has restored from is a hope, not a backup: take
+      # the pair, wipe every volume, bring the stack back and restore into it,
+      # then prove the restored document still answers with citations.
+      - name: Backup and restore round-trip
+        run: |
+          ./scripts/backup.sh ci-round-trip
+          docker compose down -v
+          docker compose up -d
+          ./scripts/restore.sh backups/ci-round-trip
+          SMOKE_SKIP_UPLOAD=1 ./scripts/smoke-test.sh
+
       - name: Service logs on failure
         if: failure()
         run: docker compose logs --no-color
@@ -79,3 +146,4 @@ jobs:
         if: always()
         run: |
           test -d .ci-cache && sudo chown -R "$(id -u):$(id -g)" .ci-cache || true
+          test -d backups && sudo chown -R "$(id -u):$(id -g)" backups || true

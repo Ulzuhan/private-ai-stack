@@ -1,0 +1,33 @@
+name: Security
+
+on:
+  schedule:
+    # CVEs are published between PRs: re-scan the pinned digests weekly
+    # instead of waiting for the next Dependabot bump to find them.
+    - cron: "47 5 * * 2"
+  workflow_dispatch:
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  trivy-rescan:
+    name: trivy-rescan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567  # v0.3.1
+      - name: Re-scan every pinned image
+        run: |
+          for image in $(docker compose config --images | sort -u); do
+            echo "=== ${image}"
+            trivy image --exit-code 1 --ignore-unfixed \
+              --scanners vuln --pkg-types os,library \
+              --severity CRITICAL,HIGH "$image"
+          done

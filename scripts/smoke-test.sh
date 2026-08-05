@@ -37,29 +37,33 @@ if [ "$code" != "200" ]; then
   exit 1
 fi
 
-log "uploading a sample document to reed"
-tmpdir=$(mktemp -d)
-trap 'rm -rf "$tmpdir"' EXIT
-printf '# Expenses policy\n\nExpenses above 75 euros require pre-approval.\n' \
-  > "${tmpdir}/expenses.md"
-document_id=$(curl -sf -F "file=@${tmpdir}/expenses.md" \
-  "${REED_URL}/v1/documents" | jq -r .document_id)
-log "uploaded ${document_id}"
+if [ "${SMOKE_SKIP_UPLOAD:-0}" = "1" ]; then
+  log "SMOKE_SKIP_UPLOAD=1 — the document must already be there (e.g. restored)"
+else
+  log "uploading a sample document to reed"
+  tmpdir=$(mktemp -d)
+  trap 'rm -rf "$tmpdir"' EXIT
+  printf '# Expenses policy\n\nExpenses above 75 euros require pre-approval.\n' \
+    > "${tmpdir}/expenses.md"
+  document_id=$(curl -sf -F "file=@${tmpdir}/expenses.md" \
+    "${REED_URL}/v1/documents" | jq -r .document_id)
+  log "uploaded ${document_id}"
 
-log "waiting for ingestion"
-status=pending
-for _ in $(seq 90); do
-  status=$(curl -sf "${REED_URL}/v1/documents/${document_id}" | jq -r .status)
-  [ "$status" = "ready" ] && break
-  if [ "$status" = "error" ]; then
-    curl -s "${REED_URL}/v1/documents/${document_id}" >&2
+  log "waiting for ingestion"
+  status=pending
+  for _ in $(seq 90); do
+    status=$(curl -sf "${REED_URL}/v1/documents/${document_id}" | jq -r .status)
+    [ "$status" = "ready" ] && break
+    if [ "$status" = "error" ]; then
+      curl -s "${REED_URL}/v1/documents/${document_id}" >&2
+      exit 1
+    fi
+    sleep 2
+  done
+  if [ "$status" != "ready" ]; then
+    echo "ingestion never finished (last status: ${status})" >&2
     exit 1
   fi
-  sleep 2
-done
-if [ "$status" != "ready" ]; then
-  echo "ingestion never finished (last status: ${status})" >&2
-  exit 1
 fi
 
 log "asking a question — the answer must come from the document"
