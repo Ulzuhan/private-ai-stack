@@ -14,6 +14,6 @@ default ignore := false
 # thirteen more on 2026-08-06) for zero security change. Reviewed
 # 2026-08-06; revisit if any service starts compiling modules at runtime
 # (none does) or if the package gains a runtime component.
-ignore if {
+ignore {
 	input.PkgName == "linux-libc-dev"
 }

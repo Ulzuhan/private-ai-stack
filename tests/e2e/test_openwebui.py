@@ -66,10 +66,14 @@ def test_the_first_visitor_chats_as_admin(page: Page, webui_url: str) -> None:
 
     # The chat input is a ProseMirror surface: fill() sets the DOM but does
     # not always wake Svelte's state, which keeps the send button disabled.
-    # Real keystrokes drive it the way a user does.
-    page.locator("#chat-input").click()
-    page.keyboard.type("Reply with exactly: pong")
-    page.locator("#send-message-button").click()
+    # Real keystrokes drive it the way a user does. The layout shifts while
+    # the chat screen settles, so the click forces past stability checks —
+    # visibility was already asserted above.
+    page.locator("#chat-input").click(force=True, timeout=90_000)
+    page.keyboard.type("Reply with exactly: pong", delay=20)
+    send = page.locator("#send-message-button")
+    expect(send).to_be_enabled(timeout=60_000)
+    send.click()
 
     expect(page.locator(".markdown-prose").last).not_to_be_empty(timeout=180_000)
 
