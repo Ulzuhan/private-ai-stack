@@ -112,8 +112,9 @@ docker volume rm "${PACK_PROJECT}_ollama_models" >/dev/null
 for model in "$GENERATION_MODEL" "$EMBEDDING_MODEL"; do
   license=$(model_field "$model" license)
   url=$(model_field "$model" license_url)
-  [ -n "$license" ] && [ -n "$url" ] ||
+  if [ -z "$license" ] || [ -z "$url" ]; then
     die "config/models.yaml has no license entry for ${model} — add one before packaging"
+  fi
   safe=$(printf '%s' "$model" | tr ':/' '--')
   if [ "$license" = "Apache-2.0" ]; then
     cp "$ROOT/LICENSE" "$bundle_dir/licenses/${safe}-LICENSE.txt"
