@@ -23,7 +23,7 @@ command -v docker >/dev/null 2>&1 || die "docker is required"
 docker info >/dev/null 2>&1 || die "the docker daemon is not running"
 
 if command -v sha256sum >/dev/null 2>&1; then
-  grep -E 'images\.tar\.gz|models\.tar\.gz' MANIFEST.txt | sha256sum -c - ||
+  grep '\.tar\.gz' MANIFEST.txt | sha256sum -c - ||
     die "checksum mismatch — re-transfer the bundle"
 fi
 
@@ -48,6 +48,19 @@ docker run --rm --entrypoint tar \
   -v "${TARGET_PROJECT}_ollama_models:/models" \
   -v "$PWD:/pkg:ro" \
   "$OLLAMA_IMAGE" xzf /pkg/models.tar.gz -C /models
+
+# Reed's volume pairs its local model cache with the document registry. An
+# existing volume means an existing deployment — never clobber its registry.
+if docker volume inspect "${TARGET_PROJECT}_reed_data" >/dev/null 2>&1; then
+  log "reed data volume already exists — keeping it (its cache is local too)"
+else
+  log "restoring reed's local model cache"
+  docker volume create "${TARGET_PROJECT}_reed_data" >/dev/null
+  docker run --rm --entrypoint tar \
+    -v "${TARGET_PROJECT}_reed_data:/data" \
+    -v "$PWD:/pkg:ro" \
+    "$OLLAMA_IMAGE" xzf /pkg/reed-data.tar.gz -C /data
+fi
 
 log "pinning the packaged model selection"
 cat >compose/.env <<EOF

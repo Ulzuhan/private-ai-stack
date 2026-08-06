@@ -118,6 +118,21 @@ until [ "$(docker inspect -f '{{.State.Health.Status}}' "${PACK_PROJECT}-ollama-
 done
 compose exec -T ollama ollama pull "$GENERATION_MODEL"
 compose exec -T ollama ollama pull "$EMBEDDING_MODEL"
+
+# Reed's bootstrap downloads its FastEmbed reranker model once. Warm it on
+# the connected side so the cache travels inside the bundle — the isolated
+# machine has no HuggingFace to fetch it from.
+log "warming reed's bootstrap so its local model cache ships in the bundle"
+compose up -d qdrant reed
+deadline=$((SECONDS + 900))
+until [ "$(docker inspect -f '{{.State.Health.Status}}' "${PACK_PROJECT}-reed-1" 2>/dev/null || true)" = "healthy" ]; do
+  if ((SECONDS >= deadline)); then
+    compose logs --no-color reed || true
+    compose down
+    die "reed never became healthy while warming the packaging stack"
+  fi
+  sleep 5
+done
 compose down
 
 log "exporting the model store"
@@ -126,7 +141,14 @@ docker run --rm --entrypoint tar \
   -v "${PACK_PROJECT}_ollama_models:/models:ro" \
   -v "$bundle_dir:/out" \
   "$ollama_image" czf /out/models.tar.gz -C /models .
-docker volume rm "${PACK_PROJECT}_ollama_models" >/dev/null
+
+log "exporting reed's data volume (its local model cache)"
+docker run --rm --entrypoint tar \
+  -v "${PACK_PROJECT}_reed_data:/data:ro" \
+  -v "$bundle_dir:/out" \
+  "$ollama_image" czf /out/reed-data.tar.gz -C /data .
+
+docker volume rm "${PACK_PROJECT}_ollama_models" "${PACK_PROJECT}_reed_data" >/dev/null
 
 # --- licenses (mandatory: the bundle redistributes model weights) ------------
 
@@ -186,7 +208,7 @@ EOF
   echo "images:"
   printf '  %s\n' "${images[@]}"
   echo
-  (cd "$bundle_dir" && hash_file images.tar.gz models.tar.gz)
+  (cd "$bundle_dir" && hash_file images.tar.gz models.tar.gz reed-data.tar.gz)
 } >"$bundle_dir/MANIFEST.txt"
 
 mv "$bundle_dir/scripts/airgap-install.sh" "$bundle_dir/install.sh"

@@ -2,8 +2,9 @@
 
 The stack can run on a machine with **no internet access at all**. A bundle
 built on a connected machine carries everything the isolated one needs:
-the pinned images, the Ollama model store, the compose files, the model
-licenses and an installer. On the isolated side the default network goes
+the pinned images, the Ollama model store, Reed's local model cache (its
+FastEmbed reranker — the isolated side has no HuggingFace), the compose
+files, the model licenses and an installer. On the isolated side the default network goes
 `internal: true` — containers can talk to each other, never outward — and
 every service runs with `pull_policy: never`, so no container ever reaches
 for a registry.
@@ -33,10 +34,12 @@ GENERATION_MODEL=qwen3.5:9b ./scripts/package-offline.sh
 ```
 
 The script pulls the pinned images, pulls the models through a throwaway
-compose project (it never touches a deployment living on that machine),
-fetches the license terms of every packaged model — the bundle
-**redistributes model weights**, so the terms are mandatory, not
-decorative — and writes:
+compose project (it never touches the volumes of a deployment living on
+that machine — but stop any running deployment first: the packaging stack
+briefly binds the same loopback ports), warms Reed's bootstrap so its local
+model cache (the FastEmbed reranker) travels too, fetches the license terms
+of every packaged model — the bundle **redistributes model weights**, so
+the terms are mandatory, not decorative — and writes:
 
 ```
 dist/private-ai-stack-offline.tar.gz
