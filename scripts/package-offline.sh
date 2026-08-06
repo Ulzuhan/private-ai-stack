@@ -74,7 +74,15 @@ log "pulling the pinned images"
 compose pull
 
 images=()
-while IFS= read -r line; do images+=("$line"); done < <(compose config --images | sort -u)
+save_refs=()
+while IFS= read -r line; do
+  images+=("$line")
+  # docker save by a digest-carrying reference writes no RepoTags into the
+  # tar — the load then restores image IDs with no names. Save by name:tag
+  # (the pinned pull created those tags) and keep the full refs for the
+  # manifest.
+  save_refs+=("${line%%@*}")
+done < <(compose config --images | sort -u)
 [ "${#images[@]}" -gt 0 ] || die "no images resolved from the compose file"
 
 ollama_image=""
@@ -86,7 +94,7 @@ done
 [ -n "$ollama_image" ] || die "no ollama image found in the compose file"
 
 log "saving ${#images[@]} images (this takes a few minutes)"
-docker save "${images[@]}" | gzip >"$bundle_dir/images.tar.gz"
+docker save "${save_refs[@]}" | gzip >"$bundle_dir/images.tar.gz"
 
 # --- models ------------------------------------------------------------------
 
