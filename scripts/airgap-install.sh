@@ -32,10 +32,11 @@ docker load -i images.tar.gz
 
 log "restoring the model store"
 docker volume create "${TARGET_PROJECT}_ollama_models" >/dev/null
-docker run --rm \
+# The image's entrypoint is the ollama CLI itself; override it to reach tar.
+docker run --rm --entrypoint tar \
   -v "${TARGET_PROJECT}_ollama_models:/models" \
   -v "$PWD:/pkg:ro" \
-  "$OLLAMA_IMAGE" tar xzf /pkg/models.tar.gz -C /models
+  "$OLLAMA_IMAGE" xzf /pkg/models.tar.gz -C /models
 
 log "pinning the packaged model selection"
 cat >compose/.env <<EOF

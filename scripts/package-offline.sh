@@ -105,10 +105,11 @@ compose exec -T ollama ollama pull "$EMBEDDING_MODEL"
 compose down
 
 log "exporting the model store"
-docker run --rm \
+# The image's entrypoint is the ollama CLI itself; override it to reach tar.
+docker run --rm --entrypoint tar \
   -v "${PACK_PROJECT}_ollama_models:/models:ro" \
   -v "$bundle_dir:/out" \
-  "$ollama_image" tar czf /out/models.tar.gz -C /models .
+  "$ollama_image" czf /out/models.tar.gz -C /models .
 docker volume rm "${PACK_PROJECT}_ollama_models" >/dev/null
 
 # --- licenses (mandatory: the bundle redistributes model weights) ------------
