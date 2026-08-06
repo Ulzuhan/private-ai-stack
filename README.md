@@ -6,15 +6,16 @@ machine: no cloud APIs, no telemetry, models run on your own hardware.
 
 [![CI](https://github.com/Ulzuhan/private-ai-stack/actions/workflows/ci.yml/badge.svg)](https://github.com/Ulzuhan/private-ai-stack/actions/workflows/ci.yml)
 [![Security scan](https://github.com/Ulzuhan/private-ai-stack/actions/workflows/security.yml/badge.svg)](https://github.com/Ulzuhan/private-ai-stack/actions/workflows/security.yml)
+[![Release](https://img.shields.io/github/v/release/Ulzuhan/private-ai-stack)](https://github.com/Ulzuhan/private-ai-stack/releases)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 ![Upload a document, ask a question, get an answer with a clickable citation — recorded by the browser E2E that runs on every PR.](assets/demo.gif)
 
-> 🚧 **Status: building toward v0.1.0.** Everything on `main` works and is
-> verified in CI on a clean runner — stack up, smoke tests, backup/restore
-> round-trip, browser E2E on both UIs. Benchmarks and the GPU and air-gap
-> profiles are in; still landing before the release tag: the production
-> override. Watch the repo or check the issues for the roadmap.
+> **Status: v0.1.0.** Everything on `main` works and is verified in CI on a
+> clean runner — stack up, smoke tests, backup/restore round-trip, browser
+> E2E on both UIs. Benchmarks and the GPU and air-gap profiles are in; the
+> release publishes an attested air-gap bundle. Still on the roadmap: the
+> production override.
 
 ## The problem
 
@@ -147,10 +148,11 @@ Everything is tunable through environment variables — see
 - **air-gap** (`scripts/package-offline.sh` + `docker-compose.airgap.yml`) —
   bundle the stack on a connected machine, install it on an isolated one
   with container egress cut. The full loop — package, wipe, install, smoke
-  with NAT disabled — runs in CI on every change:
+  with NAT disabled — runs in CI on every change, and every release
+  publishes an attested bundle built with the full default models:
   [docs/air-gap.md](docs/air-gap.md).
-- **production (TLS + auth)** — on the v0.1.0 roadmap; it lands with its
-  own CI validation before it is documented as supported.
+- **production (TLS + auth)** — on the post-v0.1.0 roadmap; it lands with
+  its own CI validation before it is documented as supported.
 
 ## Results
 
@@ -208,10 +210,11 @@ what the stack deliberately does **not** do:
 
 ## Roadmap
 
-- **v0.1.0** — production override (Caddy TLS + basic auth), release
-  pipeline with an attested air-gap bundle.
-- **v0.2** — Reed↔Open WebUI integration (pipes/functions) and real
-  observability with Langfuse, instrumenting Reed upstream.
+- **v0.1.0** ✅ — the stack above, with a release pipeline that publishes an
+  attested air-gap bundle ([changelog](CHANGELOG.md)).
+- **v0.2** — production override (Caddy TLS + basic auth), Reed↔Open WebUI
+  integration (pipes/functions) and real observability with Langfuse,
+  instrumenting Reed upstream.
 
 ## License
 

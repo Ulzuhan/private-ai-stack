@@ -18,14 +18,30 @@ bottom declares how CI proves it on every change.
 
 ## What you need
 
-- **Connected machine**: docker with compose v2.30+, ~20 GB free disk, this
-  repository checked out.
-- **Isolated machine**: docker with compose v2.30+, ~20 GB free disk,
+- **Connected machine**: docker with compose v2.30+, ~30 GB free disk, this
+  repository checked out — or just the release assets, if you use the
+  prebuilt bundle.
+- **Isolated machine**: docker with compose v2.30+, ~30 GB free disk,
   nothing else. The smoke test additionally wants `jq`, but it is optional.
 - A transfer medium both machines trust (USB drive, SCP over a one-way
   link, whatever your policy allows).
 
-## 1. Build the bundle (connected machine)
+## 1. Get the bundle (connected machine)
+
+Every release publishes a prebuilt bundle with the full default model set
+(`qwen3.5:4b` + `embeddinggemma`), built by the release pipeline and
+attested with `actions/attest-build-provenance`. Release assets cap at
+2 GB, so it ships split into numbered parts:
+
+```bash
+# download every private-ai-stack-offline.tar.gz.part-* plus the .sha256
+cat private-ai-stack-offline.tar.gz.part-* > private-ai-stack-offline.tar.gz
+sha256sum -c private-ai-stack-offline.tar.gz.sha256
+gh attestation verify private-ai-stack-offline.tar.gz.part-00 \
+  --repo Ulzuhan/private-ai-stack   # repeat per part, or trust the set
+```
+
+Or build it yourself from this repository:
 
 ```bash
 ./scripts/package-offline.sh            # writes dist/
@@ -113,8 +129,8 @@ Optional but recommended, if `jq` is available on the isolated machine:
 ## How this is validated
 
 The `airgap` job in CI runs the full loop on every change, with the tiny
-CI model set (`qwen3.5:0.8b` + `embeddinggemma`) because the full models do
-not fit a runner:
+CI model set (`qwen3.5:0.8b` + `embeddinggemma`) to keep per-change feedback
+fast — the full models would add gigabytes of pulls to every PR:
 
 1. `package-offline.sh` builds the real bundle, licenses included.
 2. `docker system prune -af --volumes` wipes **every** local image and
@@ -128,5 +144,9 @@ not fit a runner:
    ingests a document and answers with a citation, both UIs serve.
 
 The mechanism is identical to the full-size package; only the model sizes
-differ. That is the honest limit of the validation, and it is stated here
-rather than implied away.
+differ. That is the honest limit of the per-change validation, and it is
+stated here rather than implied away. The release pipeline closes the gap
+in the other direction: on every tag it builds the bundle with the full
+default model set, verifies its checksum, publishes it as release assets
+and attests its provenance — so the downloadable bundle is the pipeline's
+own product, not a hand-built artifact.

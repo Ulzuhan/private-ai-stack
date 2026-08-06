@@ -4,9 +4,18 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_call:
+    inputs:
+      concurrency-scope:
+        description: >-
+          A value unique to the calling workflow. Inside a called workflow the
+          github context belongs to the caller, so a tag push would otherwise
+          put the release quality gate in this workflow's own group.
+        required: true
+        type: string
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ inputs.concurrency-scope || 'branch' }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
