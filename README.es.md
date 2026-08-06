@@ -32,6 +32,10 @@ con cita, las dos interfaces sirven, y una copia de seguridad se restaura
 tras borrar todos los volúmenes. Un navegador automatizado recorre las dos
 UIs en cada PR. Si la insignia está en verde, el quickstart funciona.
 
+Los números de rendimiento (36 tok/s en un Apple M5, 19 s de arranque en CI
+con modelos en caché, ~2,9 GiB de RAM para todo el stack) se publican con
+la plataforma declarada en [docs/benchmarking.md](docs/benchmarking.md).
+
 ## Arranque
 
 ```bash

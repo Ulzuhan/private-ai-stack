@@ -159,10 +159,19 @@ What is verified **on every change**, on a clean GitHub runner:
 RAG quality is measured where measurement makes sense: Reed's published
 evaluation against its golden set of 41 questions, with the same model pair
 and retrieval configuration this stack ships — see
-[Reed](https://github.com/Ulzuhan/reed). Performance numbers (tokens/s,
-cold start, RAM per service) are published with their platform declared per
-number in [docs/benchmarking.md](docs/benchmarking.md) as the metrics
-milestone lands ahead of v0.1.0.
+[Reed](https://github.com/Ulzuhan/reed).
+
+Performance, measured and published with the platform declared per number
+in [docs/benchmarking.md](docs/benchmarking.md):
+
+- **36.3 tokens/s** generation with `qwen3.5:4b` on an Apple M5 (native
+  Ollama, BYO mode), 1.9 s cold / 0.2 s warm to first token;
+- **19 s** from `compose up` to a usable system in CI with models cached,
+  95 s including the cold model pull;
+- **~2.9 GiB RAM** for the whole stack after the smoke test.
+
+The CI numbers come from the `benchmarks.yml` workflow — any fork can
+re-run them on its own runner and compare receipts.
 
 ## Operations
 
