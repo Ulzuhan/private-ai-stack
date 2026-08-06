@@ -30,6 +30,17 @@ fi
 log "loading the pinned images"
 docker load -i images.tar.gz
 
+log "verifying every bundled image is present"
+missing=0
+while IFS= read -r image; do
+  if ! docker image inspect "$image" >/dev/null 2>&1; then
+    echo "missing after load: $image" >&2
+    missing=1
+  fi
+done < <(docker compose --project-directory compose \
+  -f compose/docker-compose.yml -f compose/docker-compose.airgap.yml config --images)
+[ "$missing" -eq 0 ] || die "the image load was incomplete — re-transfer the bundle"
+
 log "restoring the model store"
 docker volume create "${TARGET_PROJECT}_ollama_models" >/dev/null
 # The image's entrypoint is the ollama CLI itself; override it to reach tar.

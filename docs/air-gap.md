@@ -68,12 +68,18 @@ cd private-ai-stack-offline
 ```
 
 The installer verifies the bundle's internal checksums, loads the images,
+checks that every image the compose files name is actually present,
 restores the model store into the same named volume a normal install would
 use, pins the packaged model selection into `compose/.env`, and starts the
 stack with the air-gap override (`docker-compose.airgap.yml`): internal
 network, no pulls. In this mode `model-init` does not download anything —
 it **verifies** that every model the configuration expects is already in
 the store, and fails loudly if one is missing.
+
+One honest wrinkle: `docker save`/`load` drops digest metadata, so the
+bundle's compose copy pins images by tag and `MANIFEST.txt` records the
+full `name:tag@sha256:…` references it was built from. The tarball's SHA-256
+plus the per-file checksums tie those tags to the exact packaged bits.
 
 When it finishes:
 
