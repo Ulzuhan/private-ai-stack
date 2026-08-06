@@ -161,3 +161,88 @@ jobs:
         run: |
           test -d .ci-cache && sudo chown -R "$(id -u):$(id -g)" .ci-cache || true
           test -d backups && sudo chown -R "$(id -u):$(id -g)" backups || true
+
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    env:
+      COMPOSE_FILE: docker-compose.yml:docker-compose.ci.yml
+      # Same tiny CI model as the stack job: the tests prove the circuit and
+      # the UI behavior, never answer quality.
+      GENERATION_MODEL: qwen3.5:0.8b
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9  # v7
+        with:
+          enable-cache: true
+          cache-suffix: e2e
+
+      - name: Report and free disk space
+        run: |
+          df -h /
+          sudo docker system prune -af --volumes > /dev/null
+          df -h /
+
+      - name: Cache Ollama models
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: .ci-cache/ollama
+          key: ollama-models-${{ runner.os }}-qwen3.5-0.8b-embeddinggemma-v1
+
+      - name: Start the stack
+        run: docker compose up -d
+
+      - name: Wait for readiness
+        run: |
+          deadline=$((SECONDS + 600))
+          while :; do
+            state=$(docker compose ps -a --format json 2>/dev/null |
+              jq -r 'select(.Service=="model-init") | .State' || true)
+            if [ "$state" = "exited" ]; then
+              break
+            fi
+            if ((SECONDS >= deadline)); then
+              echo "model-init never finished (state: ${state:-unknown})" >&2
+              exit 1
+            fi
+            sleep 3
+          done
+          curl --retry 60 --retry-delay 5 --retry-all-errors -fsS \
+            http://127.0.0.1:8000/ready > /dev/null
+          code=000
+          for _ in $(seq 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/ || true)
+            [ "$code" = "200" ] && break
+            sleep 5
+          done
+          [ "$code" = "200" ] || { echo "open-webui never served (last: ${code})" >&2; exit 1; }
+
+      - run: uv sync --group e2e
+      - run: uv run playwright install --with-deps chromium
+
+      # Videos on: the recordings double as failure evidence today and as the
+      # source of the README demo.gif in the documentation phase.
+      - name: Exercise both UIs
+        run: uv run pytest tests/e2e --video on --output test-results
+
+      - name: Upload E2E recordings
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: e2e-recordings
+          path: test-results/
+          if-no-files-found: ignore
+
+      - name: Service logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+      - name: Make the model cache cacheable
+        if: always()
+        run: test -d .ci-cache && sudo chown -R "$(id -u):$(id -g)" .ci-cache || true
