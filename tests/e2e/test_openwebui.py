@@ -66,21 +66,33 @@ def _signup_first_admin(page: Page, webui_url: str) -> None:
     try:
         page.locator('button[aria-label="Close"]').first.click(timeout=15_000)
     except PlaywrightTimeoutError:
-        pass
+        return
+    # The modal's focus trap hands focus back as it unmounts; typing before
+    # it is fully gone loses the keystrokes to the body. Wait for the dialog
+    # to detach, not just for the close click to land.
+    expect(page.locator('[aria-modal="true"]')).to_have_count(0, timeout=15_000)
 
 
 def test_the_first_visitor_chats_as_admin(page: Page, webui_url: str) -> None:
     _signup_first_admin(page, webui_url)
 
     # The chat input is a ProseMirror surface: fill() sets the DOM but does
-    # not always wake Svelte's state, which keeps the send button disabled.
-    # Real keystrokes drive it the way a user does. press_sequentially
-    # focuses the element itself before typing, so the text lands in the
-    # editor even while the layout is still settling. The send button only
-    # renders once the input holds text.
-    page.locator("#chat-input").press_sequentially(
-        "Reply with exactly: pong", delay=20, timeout=90_000
-    )
+    # not wake Svelte's state, so drive it with real keystrokes after a real
+    # click. The send button only renders once the input holds text, so the
+    # typing is verified by reading the text back — retrying instead of
+    # hoping — and only then is the send button expected.
+    chat = page.locator("#chat-input")
+    for _ in range(3):
+        chat.click(timeout=90_000)
+        page.keyboard.type("Reply with exactly: pong", delay=20)
+        try:
+            expect(chat).to_contain_text("Reply with exactly: pong", timeout=10_000)
+            break
+        except AssertionError:
+            page.keyboard.press("ControlOrMeta+a")
+            page.keyboard.press("Backspace")
+    else:
+        raise AssertionError("the chat input never accepted the typed prompt")
     send = page.locator("#send-message-button")
     expect(send).to_be_enabled(timeout=60_000)
     send.click()
