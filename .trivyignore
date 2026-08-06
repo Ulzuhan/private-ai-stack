@@ -50,16 +50,6 @@ CVE-2026-46597
 CVE-2026-46602
 CVE-2026-46604
 CVE-2026-56852
-# Ubuntu 24.04 linux-libc-dev, published to the vulnerability DB on
-# 2026-08-05 — after this allowlist was first written, on the same pinned
-# digest. Fixed in newer Ubuntu kernel headers; Ollama has not rebuilt.
-CVE-2026-64437
-CVE-2026-64483
-CVE-2026-64530
-CVE-2026-64531
-CVE-2026-64534
-CVE-2026-64552
-CVE-2026-64600
 
 # --- ghcr.io/open-webui/open-webui:v0.11.0 (latest release) -----------------
 # Python dependency findings (aiohttp, pillow, pyarrow, pypdf, wheel, ...),

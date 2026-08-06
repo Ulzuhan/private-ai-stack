@@ -64,7 +64,11 @@ def _signup_first_admin(page: Page, webui_url: str) -> None:
 def test_the_first_visitor_chats_as_admin(page: Page, webui_url: str) -> None:
     _signup_first_admin(page, webui_url)
 
-    page.locator("#chat-input").fill("Reply with exactly: pong")
+    # The chat input is a ProseMirror surface: fill() sets the DOM but does
+    # not always wake Svelte's state, which keeps the send button disabled.
+    # Real keystrokes drive it the way a user does.
+    page.locator("#chat-input").click()
+    page.keyboard.type("Reply with exactly: pong")
     page.locator("#send-message-button").click()
 
     expect(page.locator(".markdown-prose").last).not_to_be_empty(timeout=180_000)

@@ -94,6 +94,7 @@ jobs:
             trivy image --exit-code 1 --ignore-unfixed \
               --scanners vuln --pkg-types os,library \
               --severity CRITICAL,HIGH \
+              --ignore-policy .trivyignore.rego \
               --format json --output "${RUNNER_TEMP}/trivy-result.json" "$image" || failed=1
             jq -r '.Results[]?.Vulnerabilities[]? | "\(.VulnerabilityID)\t\(.Severity)\t\(.PkgName)"' \
               "${RUNNER_TEMP}/trivy-result.json" | sort -u
