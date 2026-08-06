@@ -168,9 +168,9 @@ jobs:
 
   # The air-gap guide cannot be prose alone: build the real bundle with the
   # tiny CI model set, wipe every local image and volume to simulate the
-  # isolated machine, install from the bundle and smoke it behind an
-  # internal (no-egress) network. The mechanism is identical to the full
-  # package — only the model sizes differ.
+  # isolated machine, install from the bundle and smoke it with the stack's
+  # NAT disabled (no container egress). The mechanism is identical to the
+  # full package — only the model sizes differ.
   airgap:
     name: airgap
     runs-on: ubuntu-latest
@@ -204,7 +204,7 @@ jobs:
           cd dist/private-ai-stack-offline
           ./install.sh
 
-      - name: Smoke test behind the internal network
+      - name: Smoke test with container egress cut
         run: |
           cd dist/private-ai-stack-offline/compose
           COMPOSE_FILE=docker-compose.yml:docker-compose.airgap.yml \

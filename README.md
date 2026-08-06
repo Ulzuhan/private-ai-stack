@@ -146,8 +146,8 @@ Everything is tunable through environment variables — see
   ([issue #8](https://github.com/Ulzuhan/private-ai-stack/issues/8)).
 - **air-gap** (`scripts/package-offline.sh` + `docker-compose.airgap.yml`) —
   bundle the stack on a connected machine, install it on an isolated one
-  with zero egress. The full loop — package, wipe, install, smoke behind an
-  internal network — runs in CI on every change:
+  with container egress cut. The full loop — package, wipe, install, smoke
+  with NAT disabled — runs in CI on every change:
   [docs/air-gap.md](docs/air-gap.md).
 - **production (TLS + auth)** — on the v0.1.0 roadmap; it lands with its
   own CI validation before it is documented as supported.

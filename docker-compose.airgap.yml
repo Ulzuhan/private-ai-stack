@@ -4,9 +4,13 @@
 #
 #   docker compose -f docker-compose.yml -f docker-compose.airgap.yml up -d
 #
-# Two changes make the isolation explicit rather than incidental: the default
-# network goes internal (containers can talk to each other, never outward),
-# and no service may ever reach for a registry.
+# The egress cut is a disabled masquerade, not an `internal: true` network:
+# an internal network also kills the published loopback ports, and then the
+# UIs are unreachable from the host — which is the whole point of the stack.
+# With NAT off, container packets have no route beyond the host: services
+# resolve each other and the published ports work, but nothing can leave.
+# (On a genuinely isolated machine there is no upstream anyway; this makes
+# the property hold even on a connected one, which is what CI proves.)
 
 services:
   # There is no registry to pull from: model-init becomes a loud check that
@@ -35,4 +39,5 @@ services:
 
 networks:
   default:
-    internal: true
+    driver_opts:
+      com.docker.network.bridge.enable_ip_masquerade: "false"

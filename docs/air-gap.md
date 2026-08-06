@@ -4,10 +4,14 @@ The stack can run on a machine with **no internet access at all**. A bundle
 built on a connected machine carries everything the isolated one needs:
 the pinned images, the Ollama model store, Reed's local model cache (its
 FastEmbed reranker — the isolated side has no HuggingFace), the compose
-files, the model licenses and an installer. On the isolated side the default network goes
-`internal: true` — containers can talk to each other, never outward — and
-every service runs with `pull_policy: never`, so no container ever reaches
-for a registry.
+files, the model licenses and an installer. On the isolated side the
+stack's bridge network runs with **masquerading disabled** — containers
+talk to each other and serve their loopback ports to the host, but their
+packets have no route outward — and every service runs with
+`pull_policy: never`, so no container ever reaches for a registry. (An
+`internal: true` network would cut egress too, but it also kills the
+published loopback ports — and then the UIs are unreachable from the very
+machine they run on.)
 
 This page is the procedure. The **How this is validated** section at the
 bottom declares how CI proves it on every change.
@@ -74,8 +78,8 @@ The installer verifies the bundle's internal checksums, loads the images,
 checks that every image the compose files name is actually present,
 restores the model store into the same named volume a normal install would
 use, pins the packaged model selection into `compose/.env`, and starts the
-stack with the air-gap override (`docker-compose.airgap.yml`): internal
-network, no pulls. In this mode `model-init` does not download anything —
+stack with the air-gap override (`docker-compose.airgap.yml`): no NAT off
+the bridge, no pulls. In this mode `model-init` does not download anything —
 it **verifies** that every model the configuration expects is already in
 the store, and fails loudly if one is missing.
 
@@ -117,8 +121,9 @@ not fit a runner:
    volume — the simulation of the isolated machine. If the bundle forgot
    anything, nothing is left to paper over it.
 3. `install.sh` runs from the extracted tarball.
-4. The stack comes up on an `internal: true` network — the runner's own
-   egress is irrelevant; the containers have none.
+4. The stack comes up with masquerading disabled on its bridge — the
+   runner's own egress stops being usable by the containers, while the
+   loopback-published UIs keep working.
 5. The same smoke test as the online CI passes: models verified, Reed
    ingests a document and answers with a citation, both UIs serve.
 

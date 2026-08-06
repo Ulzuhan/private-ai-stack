@@ -68,7 +68,7 @@ GENERATION_MODEL=${GENERATION_MODEL}
 EMBEDDING_MODEL=${EMBEDDING_MODEL}
 EOF
 
-log "starting the stack (internal network, no egress)"
+log "starting the stack (no NAT off the bridge, no egress)"
 docker compose --project-directory compose \
   -f compose/docker-compose.yml -f compose/docker-compose.airgap.yml up -d
 

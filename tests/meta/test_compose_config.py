@@ -129,12 +129,13 @@ def test_open_webui_cannot_become_a_second_rag_door(services: dict) -> None:
 
 
 def test_airgap_override_actually_cuts_egress() -> None:
-    """The air-gap promise as code: internal network, no registry pulls, and
-    model-init reduced to a local check instead of a download."""
+    """The air-gap promise as code: no NAT off the bridge (an `internal: true`
+    network would also kill the published loopback ports), no registry pulls,
+    and model-init reduced to a local check instead of a download."""
     data = yaml.safe_load((ROOT / "docker-compose.airgap.yml").read_text(encoding="utf-8"))
-    networks = data.get("networks") or {}
-    assert networks.get("default", {}).get("internal") is True, (
-        "airgap: the default network must be internal"
+    driver_opts = (data.get("networks") or {}).get("default", {}).get("driver_opts") or {}
+    assert driver_opts.get("com.docker.network.bridge.enable_ip_masquerade") == "false", (
+        "airgap: the default network must run without masquerading"
     )
     services = data.get("services") or {}
     for name in ("ollama", "model-init", "qdrant", "reed", "open-webui"):

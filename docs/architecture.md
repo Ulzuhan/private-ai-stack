@@ -98,7 +98,7 @@ Details in [operations.md](operations.md#backup-and-restore).
 | `docker-compose.yml` | The whole stack, cpu profile |
 | `docker-compose.byo.yml` | Override: use a native Ollama on the host |
 | `docker-compose.gpu.yml` | Override: NVIDIA reservation + `qwen3.5:9b` default |
-| `docker-compose.airgap.yml` | Override: internal network, no pulls, model-init verifies |
+| `docker-compose.airgap.yml` | Override: no NAT off the bridge, no pulls, model-init verifies |
 | `docker-compose.ci.yml` | Override: CI resource limits and the tiny model |
 | `config/models.yaml` | Model catalog per profile + licenses; meta-tested against the compose files |
 | `.env.example` | Every tunable, documented; a meta-test keeps it in lockstep with the compose files |
