@@ -63,6 +63,10 @@ docker info >/dev/null 2>&1 || die "the docker daemon is not running"
 bundle_dir="${OUT}/${BUNDLE}"
 rm -rf "$bundle_dir"
 mkdir -p "$bundle_dir/licenses" "$bundle_dir/compose" "$bundle_dir/scripts"
+# docker -v treats a relative path as a named volume; the bundle dir must be
+# absolute before any bind mount uses it.
+bundle_dir=$(cd "$bundle_dir" && pwd)
+OUT=$(dirname "$bundle_dir")
 
 # --- images ------------------------------------------------------------------
 
