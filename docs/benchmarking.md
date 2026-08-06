@@ -91,9 +91,13 @@ whether your documents are allowed to leave the machine at all.
 
 ### Awaiting community hardware
 
-- **GPU profile** (`qwen3.5:9b`): no NVIDIA hardware is available to the
-  author. Its cells will be marked *not yet measured — contributions
-  welcome*, with an issue to collect them.
+- **GPU profile** (`docker-compose.gpu.yml`, `qwen3.5:9b`): the override
+  ships and is validated syntactically in CI (`compose config` over every
+  combination), but no NVIDIA hardware is available to the author, so its
+  numbers stay *not yet measured — contributions welcome*. Measured with
+  `scripts/benchmark-local.py`, your rows are comparable to the Mac table
+  above: see
+  [issue #8](https://github.com/Ulzuhan/private-ai-stack/issues/8).
 
 ## Method notes
 

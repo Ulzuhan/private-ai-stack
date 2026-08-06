@@ -6,9 +6,9 @@ sobre tus documentos con citas verificables — en un solo
 telemetría, con los modelos en tu propio hardware.
 
 > 🚧 **Estado: camino de la v0.1.0.** Todo lo que está en `main` funciona y se
-> verifica en CI sobre un runner limpio en cada cambio. Antes de la release
-> aterrizan los benchmarks, los perfiles GPU y air-gap y el override de
-> producción.
+> verifica en CI sobre un runner limpio en cada cambio. Los benchmarks y los
+> perfiles GPU y air-gap ya están; antes de la release aterriza el override
+> de producción.
 
 Esta es la versión ejecutiva en español; la documentación técnica completa
 (arquitectura, operación, hardening) vive en el

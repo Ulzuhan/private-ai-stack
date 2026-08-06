@@ -1,0 +1,38 @@
+# Air-gap override: run the stack on a machine with no internet access.
+# Images and models arrive via the bundle built by scripts/package-offline.sh
+# on a connected machine — see docs/air-gap.md for the full procedure.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.airgap.yml up -d
+#
+# Two changes make the isolation explicit rather than incidental: the default
+# network goes internal (containers can talk to each other, never outward),
+# and no service may ever reach for a registry.
+
+services:
+  # There is no registry to pull from: model-init becomes a loud check that
+  # the bundle pre-loaded every model the configuration expects.
+  model-init:
+    pull_policy: never
+    command:
+      - |
+        set -e
+        for model in "$$GENERATION_MODEL" "$$EMBEDDING_MODEL"; do
+          echo "checking $$model"
+          ollama show "$$model" > /dev/null
+        done
+
+  ollama:
+    pull_policy: never
+
+  qdrant:
+    pull_policy: never
+
+  reed:
+    pull_policy: never
+
+  open-webui:
+    pull_policy: never
+
+networks:
+  default:
+    internal: true

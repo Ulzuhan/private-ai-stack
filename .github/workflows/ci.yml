@@ -51,6 +51,9 @@ jobs:
           docker compose -f docker-compose.yml config -q
           docker compose -f docker-compose.yml -f docker-compose.byo.yml config -q
           docker compose -f docker-compose.yml -f docker-compose.ci.yml config -q
+          docker compose -f docker-compose.yml -f docker-compose.gpu.yml config -q
+          docker compose -f docker-compose.yml -f docker-compose.airgap.yml config -q
+          docker compose -f docker-compose.yml -f docker-compose.gpu.yml -f docker-compose.airgap.yml config -q
 
   meta:
     name: meta
@@ -162,6 +165,64 @@ jobs:
         run: |
           test -d .ci-cache && sudo chown -R "$(id -u):$(id -g)" .ci-cache || true
           test -d backups && sudo chown -R "$(id -u):$(id -g)" backups || true
+
+  # The air-gap guide cannot be prose alone: build the real bundle with the
+  # tiny CI model set, wipe every local image and volume to simulate the
+  # isolated machine, install from the bundle and smoke it behind an
+  # internal (no-egress) network. The mechanism is identical to the full
+  # package — only the model sizes differ.
+  airgap:
+    name: airgap
+    runs-on: ubuntu-latest
+    env:
+      GENERATION_MODEL: qwen3.5:0.8b
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Report and free disk space
+        run: |
+          df -h /
+          sudo docker system prune -af --volumes > /dev/null
+          df -h /
+
+      - name: Build the offline bundle (connected phase)
+        run: ./scripts/package-offline.sh dist
+
+      - name: Verify the bundle checksum
+        run: cd dist && sha256sum -c private-ai-stack-offline.tar.gz.sha256
+
+      # The proof that the bundle is complete: nothing local survives, so
+      # everything the isolated phase needs must come out of the tarball.
+      - name: Simulate the isolated machine
+        run: sudo docker system prune -af --volumes
+
+      - name: Install from the bundle with no egress
+        run: |
+          tar xzf dist/private-ai-stack-offline.tar.gz -C dist
+          cd dist/private-ai-stack-offline
+          ./install.sh
+
+      - name: Smoke test behind the internal network
+        run: |
+          cd dist/private-ai-stack-offline/compose
+          COMPOSE_FILE=docker-compose.yml:docker-compose.airgap.yml \
+            ../scripts/smoke-test.sh
+
+      - name: Service logs on failure
+        if: failure()
+        run: |
+          cd dist/private-ai-stack-offline/compose 2>/dev/null &&
+            COMPOSE_FILE=docker-compose.yml:docker-compose.airgap.yml \
+            docker compose logs --no-color || true
+
+      - name: Tear down
+        if: always()
+        run: |
+          cd dist/private-ai-stack-offline/compose 2>/dev/null &&
+            COMPOSE_FILE=docker-compose.yml:docker-compose.airgap.yml \
+            docker compose down -v || true
 
   e2e:
     name: e2e

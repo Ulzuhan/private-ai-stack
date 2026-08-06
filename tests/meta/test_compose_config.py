@@ -16,7 +16,12 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / "docker-compose.yml"
-OVERRIDES = [ROOT / "docker-compose.byo.yml", ROOT / "docker-compose.ci.yml"]
+OVERRIDES = [
+    ROOT / "docker-compose.byo.yml",
+    ROOT / "docker-compose.ci.yml",
+    ROOT / "docker-compose.gpu.yml",
+    ROOT / "docker-compose.airgap.yml",
+]
 
 PINNED_IMAGE = re.compile(r"^[\w./-]+:[\w.-]+@sha256:[0-9a-f]{64}$")
 LONG_RUNNING = ["ollama", "qdrant", "reed", "open-webui"]
@@ -121,3 +126,32 @@ def test_open_webui_cannot_become_a_second_rag_door(services: dict) -> None:
     # Without this, every flag above is written to the internal database once
     # and silently ignored afterwards.
     assert webui.get("ENABLE_PERSISTENT_CONFIG") == "false"
+
+
+def test_airgap_override_actually_cuts_egress() -> None:
+    """The air-gap promise as code: internal network, no registry pulls, and
+    model-init reduced to a local check instead of a download."""
+    data = yaml.safe_load((ROOT / "docker-compose.airgap.yml").read_text(encoding="utf-8"))
+    networks = data.get("networks") or {}
+    assert networks.get("default", {}).get("internal") is True, (
+        "airgap: the default network must be internal"
+    )
+    services = data.get("services") or {}
+    for name in ("ollama", "model-init", "qdrant", "reed", "open-webui"):
+        assert services.get(name, {}).get("pull_policy") == "never", (
+            f"airgap: {name} must never reach for a registry"
+        )
+    command = " ".join(services["model-init"].get("command") or [])
+    assert "ollama show" in command and "ollama pull" not in command, (
+        "airgap: model-init must verify pre-loaded models, not pull them"
+    )
+
+
+def test_gpu_override_reserves_an_nvidia_device() -> None:
+    data = yaml.safe_load((ROOT / "docker-compose.gpu.yml").read_text(encoding="utf-8"))
+    devices = (
+        data["services"]["ollama"]["deploy"]["resources"]["reservations"]["devices"]
+    )
+    assert any(d.get("driver") == "nvidia" for d in devices), (
+        "gpu override: ollama must reserve an NVIDIA device"
+    )

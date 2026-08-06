@@ -83,8 +83,9 @@ Details in [operations.md](operations.md#backup-and-restore).
 - **Containers by default, native Ollama on macOS.** Docker has no Metal
   passthrough; on Apple Silicon the containerized Ollama is CPU-only and
   several times slower than a native one. `docker-compose.byo.yml` points
-  the stack at `host.docker.internal:11434`. The GPU profile (Linux/Windows)
-  is on the v0.1.0 roadmap.
+  the stack at `host.docker.internal:11434`. On Linux/Windows with an NVIDIA
+  GPU, `docker-compose.gpu.yml` reserves the device for the containerized
+  Ollama and defaults to the larger `qwen3.5:9b`.
 - **One generation model, configurable.** `GENERATION_MODEL` (default
   `qwen3.5:4b`, fallback `qwen3:4b`) feeds both doors; `EMBEDDING_MODEL`
   (default `embeddinggemma`) feeds Reed. CI runs the same wiring with the
@@ -96,9 +97,12 @@ Details in [operations.md](operations.md#backup-and-restore).
 |---|---|
 | `docker-compose.yml` | The whole stack, cpu profile |
 | `docker-compose.byo.yml` | Override: use a native Ollama on the host |
+| `docker-compose.gpu.yml` | Override: NVIDIA reservation + `qwen3.5:9b` default |
+| `docker-compose.airgap.yml` | Override: internal network, no pulls, model-init verifies |
 | `docker-compose.ci.yml` | Override: CI resource limits and the tiny model |
+| `config/models.yaml` | Model catalog per profile + licenses; meta-tested against the compose files |
 | `.env.example` | Every tunable, documented; a meta-test keeps it in lockstep with the compose files |
-| `scripts/` | `preflight.sh`, `smoke-test.sh`, `backup.sh`, `restore.sh`, `qdrant-snapshot.py` |
+| `scripts/` | `preflight.sh`, `smoke-test.sh`, `backup.sh`, `restore.sh`, `package-offline.sh`, `benchmark-local.py`, `qdrant-snapshot.py` |
 | `tests/meta/` | Machine-checked invariants (env parity, workflow/ruleset parity, docs drift) |
 | `tests/e2e/` | Playwright journeys over both UIs; videos are published as CI artifacts |
 | `assets/demo.gif` | Recorded from the E2E run on `main` |

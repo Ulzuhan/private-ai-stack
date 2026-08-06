@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# airgap-install.sh — install the offline bundle on the isolated machine.
+# Packaged as install.sh at the bundle root by package-offline.sh; all
+# package-time choices (image refs, models, project name) come from
+# manifest.env next to it. Requires docker with compose v2 and enough disk;
+# needs no network at all.
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
+log() { printf '%s %s\n' "$(date -u +%H:%M:%S)" "$*"; }
+die() {
+  echo "error: $*" >&2
+  exit 1
+}
+
+[ -f manifest.env ] || die "manifest.env not found — run from the bundle root"
+# shellcheck source=/dev/null
+. ./manifest.env
+: "${TARGET_PROJECT:?}" "${OLLAMA_IMAGE:?}" "${GENERATION_MODEL:?}" "${EMBEDDING_MODEL:?}"
+
+command -v docker >/dev/null 2>&1 || die "docker is required"
+docker info >/dev/null 2>&1 || die "the docker daemon is not running"
+
+if command -v sha256sum >/dev/null 2>&1; then
+  grep -E 'images\.tar\.gz|models\.tar\.gz' MANIFEST.txt | sha256sum -c - ||
+    die "checksum mismatch — re-transfer the bundle"
+fi
+
+log "loading the pinned images"
+docker load -i images.tar.gz
+
+log "restoring the model store"
+docker volume create "${TARGET_PROJECT}_ollama_models" >/dev/null
+docker run --rm \
+  -v "${TARGET_PROJECT}_ollama_models:/models" \
+  -v "$PWD:/pkg:ro" \
+  "$OLLAMA_IMAGE" tar xzf /pkg/models.tar.gz -C /models
+
+log "pinning the packaged model selection"
+cat >compose/.env <<EOF
+GENERATION_MODEL=${GENERATION_MODEL}
+EMBEDDING_MODEL=${EMBEDDING_MODEL}
+EOF
+
+log "starting the stack (internal network, no egress)"
+docker compose --project-directory compose \
+  -f compose/docker-compose.yml -f compose/docker-compose.airgap.yml up -d
+
+log "done — chat at http://127.0.0.1:3000, documents at http://127.0.0.1:8000"
+echo "Smoke test, if jq is available on this machine:"
+echo "  (cd compose && COMPOSE_FILE=docker-compose.yml:docker-compose.airgap.yml ../scripts/smoke-test.sh)"
