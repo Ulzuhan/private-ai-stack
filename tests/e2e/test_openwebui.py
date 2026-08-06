@@ -59,6 +59,14 @@ def _signup_first_admin(page: Page, webui_url: str) -> None:
     _submit_auth_form(page, ADMIN, signup=True)
     # Landing on the chat UI proves the account was created and logged in.
     expect(page.locator("#chat-input")).to_be_visible(timeout=120_000)
+    # Admins get a "What's New" changelog modal on first login (gated on
+    # role === 'admin' in the app layout). While it is up it swallows the
+    # clicks and keystrokes meant for the chat, so dismiss it first. The
+    # close control is the X button with aria-label "Close".
+    try:
+        page.locator('button[aria-label="Close"]').first.click(timeout=15_000)
+    except PlaywrightTimeoutError:
+        pass
 
 
 def test_the_first_visitor_chats_as_admin(page: Page, webui_url: str) -> None:
@@ -66,11 +74,13 @@ def test_the_first_visitor_chats_as_admin(page: Page, webui_url: str) -> None:
 
     # The chat input is a ProseMirror surface: fill() sets the DOM but does
     # not always wake Svelte's state, which keeps the send button disabled.
-    # Real keystrokes drive it the way a user does. The layout shifts while
-    # the chat screen settles, so the click forces past stability checks —
-    # visibility was already asserted above.
-    page.locator("#chat-input").click(force=True, timeout=90_000)
-    page.keyboard.type("Reply with exactly: pong", delay=20)
+    # Real keystrokes drive it the way a user does. press_sequentially
+    # focuses the element itself before typing, so the text lands in the
+    # editor even while the layout is still settling. The send button only
+    # renders once the input holds text.
+    page.locator("#chat-input").press_sequentially(
+        "Reply with exactly: pong", delay=20, timeout=90_000
+    )
     send = page.locator("#send-message-button")
     expect(send).to_be_enabled(timeout=60_000)
     send.click()
