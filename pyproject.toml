@@ -14,7 +14,13 @@ dev = [
     "pytest>=8.4",
     "pyyaml>=6.0",
 ]
+e2e = [
+    "pytest-playwright>=0.6,<1",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
+markers = [
+    "e2e: browser tests that require the running stack",
+]
