@@ -42,20 +42,20 @@ USER = {
 
 def _submit_auth_form(page: Page, user: dict, *, signup: bool) -> None:
     if signup:
-        page.locator('input[name="username"]').fill(user["name"])
-    page.locator('input[name="email"]').fill(user["email"])
-    page.locator('input[name="password"]').fill(user["password"])
+        page.locator("#name").fill(user["name"])
+    page.locator("#email").fill(user["email"])
+    page.locator("#password").fill(user["password"])
     page.locator('button[type="submit"]').first.click()
 
 
 def _signup_first_admin(page: Page, webui_url: str) -> None:
     page.goto(f"{webui_url}/auth")
-    # A fresh install may show an onboarding splash before the signup form.
+    # A fresh install shows the onboarding splash before the signup form.
     try:
-        page.get_by_role("button", name="Get started").click(timeout=5_000)
+        page.get_by_role("button", name="Get started").click(timeout=15_000)
     except PlaywrightTimeoutError:
         pass
-    expect(page.locator('input[name="username"]')).to_be_visible(timeout=60_000)
+    expect(page.locator("#name")).to_be_visible(timeout=60_000)
     _submit_auth_form(page, ADMIN, signup=True)
     # Landing on the chat UI proves the account was created and logged in.
     expect(page.locator("#chat-input")).to_be_visible(timeout=120_000)
@@ -91,7 +91,7 @@ def test_role_user_gets_no_upload_door(
     api.dispose()
 
     page.goto(f"{webui_url}/auth")
-    expect(page.locator('input[name="email"]')).to_be_visible(timeout=60_000)
+    expect(page.locator("#email")).to_be_visible(timeout=60_000)
     _submit_auth_form(page, USER, signup=False)
     expect(page.locator("#chat-input")).to_be_visible(timeout=120_000)
 
