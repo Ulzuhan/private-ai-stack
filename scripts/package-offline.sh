@@ -79,11 +79,19 @@ while IFS= read -r line; do
   images+=("$line")
   # docker save by a digest-carrying reference writes no RepoTags into the
   # tar — the load then restores image IDs with no names. Save by name:tag
-  # (the pinned pull created those tags) and keep the full refs for the
-  # manifest.
+  # and keep the full refs for the manifest.
   save_refs+=("${line%%@*}")
 done < <(compose config --images | sort -u)
 [ "${#images[@]}" -gt 0 ] || die "no images resolved from the compose file"
+
+# A digest-carrying pull does not always materialize the name:tag tag (the
+# classic store keeps only the RepoDigest); create any that are missing so
+# the save below archives named, loadable tags.
+for i in "${!images[@]}"; do
+  if ! docker image inspect "${save_refs[$i]}" >/dev/null 2>&1; then
+    docker tag "${images[$i]}" "${save_refs[$i]}"
+  fi
+done
 
 ollama_image=""
 for image in "${images[@]}"; do
