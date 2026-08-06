@@ -1,0 +1,23 @@
+# Pins rot without an updater. Three ecosystems, all weekly:
+# - docker-compose: the service images (tag + digest) in every compose file
+# - github-actions: the SHA-pinned actions in .github/workflows
+# - uv: the test tooling in pyproject.toml + uv.lock
+# There is no "docker" ecosystem entry: the repo builds no Dockerfiles —
+# every image reference lives in the compose files.
+version: 2
+updates:
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      day: wednesday
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: wednesday
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+      day: wednesday

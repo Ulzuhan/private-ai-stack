@@ -5,22 +5,32 @@ sobre tus documentos con citas verificables — en un solo
 `docker compose up -d`.** Nada sale de tu máquina: sin APIs cloud, sin
 telemetría, con los modelos en tu propio hardware.
 
-> 🚧 **En construcción, camino de la v0.1.0.** Todo lo publicado funciona y se
-> verifica en CI sobre un runner limpio; el caso de estudio completo
-> (arquitectura, hardening, air-gap, benchmarks) está aterrizando.
+> 🚧 **Estado: camino de la v0.1.0.** Todo lo que está en `main` funciona y se
+> verifica en CI sobre un runner limpio en cada cambio. Antes de la release
+> aterrizan los benchmarks, los perfiles GPU y air-gap y el override de
+> producción.
 
-Esta es la versión resumida en español; la documentación técnica completa
-vive en el [README en inglés](README.md).
+Esta es la versión ejecutiva en español; la documentación técnica completa
+(arquitectura, operación, hardening) vive en el
+[README en inglés](README.md).
 
 ## Qué resuelve
 
-Equipos que no pueden mandar datos a la nube — RGPD, acuerdos de tratamiento,
-sectores regulados — se quedan sin la mitad de las herramientas de IA
-modernas. Este stack demuestra que la alternativa on-prem no es una promesa
-de marketing: chat con modelos locales (Open WebUI + Ollama) y RAG documental
-con citas clicables ([Reed](https://github.com/Ulzuhan/reed)) sobre Qdrant,
-levantado con un comando, endurecido por defecto y con cada afirmación
-verificada en CI.
+Equipos que no pueden mandar datos a la nube — RGPD, acuerdos de tratamiento
+de datos, sectores regulados — se quedan fuera de buena parte de la IA
+moderna, o la pagan por token sin control de coste. Este stack demuestra que
+la alternativa on-prem no es una promesa de marketing: chat con modelos
+locales (Open WebUI + Ollama) y RAG documental con citas clicables
+([Reed](https://github.com/Ulzuhan/reed)) sobre Qdrant, levantado con un
+comando, endurecido por defecto y con cada afirmación verificada en CI.
+
+## Cómo se verifica
+
+Cada cambio levanta el stack completo en un runner limpio de GitHub: los
+modelos se descargan, el LLM responde, Reed ingesta un documento y contesta
+con cita, las dos interfaces sirven, y una copia de seguridad se restaura
+tras borrar todos los volúmenes. Un navegador automatizado recorre las dos
+UIs en cada PR. Si la insignia está en verde, el quickstart funciona.
 
 ## Arranque
 
