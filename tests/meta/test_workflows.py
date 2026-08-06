@@ -80,3 +80,13 @@ def test_every_workflow_declares_a_distinct_concurrency_group() -> None:
         assert match is not None, f"{workflow.name} declares no concurrency group"
         groups.append(match.group(1))
     assert len(set(groups)) == len(groups), f"workflows share a group: {groups}"
+
+
+def test_dependabot_covers_the_pinned_ecosystems() -> None:
+    """Pins rot without an updater: compose images, actions, test tooling."""
+    config = yaml.safe_load((ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8"))
+    ecosystems = {update["package-ecosystem"] for update in config["updates"]}
+    expected = {"docker-compose", "github-actions", "uv"}
+    assert ecosystems == expected, (
+        f"dependabot ecosystems {sorted(ecosystems)} != {sorted(expected)}"
+    )
