@@ -1,0 +1,43 @@
+# Model catalog: which models each deployment profile pulls, and under what
+# terms. This file is the single source of truth — a meta-test asserts that
+# the compose defaults, the CI model and the GPU override all match what is
+# declared here, and package-offline.sh reads the license entries to ship the
+# required terms inside the air-gap bundle.
+#
+# License entries matter because the air-gap package redistributes model
+# weights: embeddinggemma is NOT open source — it ships under Google's Gemma
+# Terms of Use with its Prohibited Use Policy, so the bundle must carry those
+# terms. The Qwen3.5 entries record Apache-2.0 as published by Qwen; re-verify
+# before the v0.1.0 release (release checklist).
+
+profiles:
+  # Default: consumer CPU hardware (or BYO native Ollama on Apple Silicon).
+  cpu:
+    generation: qwen3.5:4b
+    embedding: embeddinggemma
+  # NVIDIA GPU override (docker-compose.gpu.yml): the larger multimodal option.
+  gpu:
+    generation: qwen3.5:9b
+    embedding: embeddinggemma
+  # CI smoke set: tiny on purpose — it proves the circuit, never quality.
+  ci:
+    generation: qwen3.5:0.8b
+    embedding: embeddinggemma
+
+models:
+  qwen3.5:4b:
+    license: Apache-2.0
+    license_url: https://www.apache.org/licenses/LICENSE-2.0
+  qwen3.5:9b:
+    license: Apache-2.0
+    license_url: https://www.apache.org/licenses/LICENSE-2.0
+  qwen3.5:0.8b:
+    license: Apache-2.0
+    license_url: https://www.apache.org/licenses/LICENSE-2.0
+  embeddinggemma:
+    license: Gemma Terms of Use
+    license_url: https://ai.google.dev/gemma/terms
+    note: >-
+      Not an OSI-approved license. Google's Gemma Terms of Use and its
+      Prohibited Use Policy apply; the air-gap bundle must include them
+      because it redistributes the weights.

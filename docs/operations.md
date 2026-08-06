@@ -72,7 +72,7 @@ pull request.
   embedding model changes Reed's index fingerprint — reindex afterwards.
   Note that `embeddinggemma` is distributed under the Gemma Terms of Use,
   not an OSS license; that matters if you redistribute model weights (the
-  air-gap package will carry the terms).
+  air-gap bundle carries the terms — see [air-gap.md](air-gap.md)).
 
 ## Open WebUI: PersistentConfig gotcha
 

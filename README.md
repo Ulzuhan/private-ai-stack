@@ -12,9 +12,9 @@ machine: no cloud APIs, no telemetry, models run on your own hardware.
 
 > 🚧 **Status: building toward v0.1.0.** Everything on `main` works and is
 > verified in CI on a clean runner — stack up, smoke tests, backup/restore
-> round-trip, browser E2E on both UIs. Still landing before the release tag:
-> benchmarks, GPU and air-gap profiles, and the production override. Watch the
-> repo or check the issues for the roadmap.
+> round-trip, browser E2E on both UIs. Benchmarks and the GPU and air-gap
+> profiles are in; still landing before the release tag: the production
+> override. Watch the repo or check the issues for the roadmap.
 
 ## The problem
 
@@ -140,8 +140,17 @@ Everything is tunable through environment variables — see
 - **cpu** (default, what you just ran) — consumer hardware, shared 4B model.
 - **BYO Ollama** (`docker-compose.byo.yml`) — native inference on the host;
   the fast path on Apple Silicon.
-- **gpu, air-gap, production (TLS + auth)** — on the v0.1.0 roadmap; each
-  lands with its own CI validation before it is documented as supported.
+- **gpu** (`docker-compose.gpu.yml`) — NVIDIA acceleration and the larger
+  `qwen3.5:9b`, on Linux/Windows with the Container Toolkit. Validated
+  syntactically in CI; its benchmark cells await community hardware
+  ([issue #8](https://github.com/Ulzuhan/private-ai-stack/issues/8)).
+- **air-gap** (`scripts/package-offline.sh` + `docker-compose.airgap.yml`) —
+  bundle the stack on a connected machine, install it on an isolated one
+  with container egress cut. The full loop — package, wipe, install, smoke
+  with NAT disabled — runs in CI on every change:
+  [docs/air-gap.md](docs/air-gap.md).
+- **production (TLS + auth)** — on the v0.1.0 roadmap; it lands with its
+  own CI validation before it is documented as supported.
 
 ## Results
 
@@ -199,8 +208,8 @@ what the stack deliberately does **not** do:
 
 ## Roadmap
 
-- **v0.1.0** — benchmarks with declared platforms, `gpu` and air-gap
-  profiles, production override (Caddy TLS + basic auth), release pipeline.
+- **v0.1.0** — production override (Caddy TLS + basic auth), release
+  pipeline with an attested air-gap bundle.
 - **v0.2** — Reed↔Open WebUI integration (pipes/functions) and real
   observability with Langfuse, instrumenting Reed upstream.
 

@@ -1,0 +1,36 @@
+# GPU override: NVIDIA acceleration for the shared Ollama, and the larger
+# qwen3.5:9b as the default generation model (multimodal, tools, thinking).
+# Linux/Windows with an NVIDIA GPU and the Container Toolkit installed — on
+# Apple Silicon the fast path is the BYO override with a native Ollama, not
+# this file.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+#
+# Honesty note: no NVIDIA hardware is available to the author, so this
+# override is validated syntactically in CI (`compose config`) and its
+# benchmark cells stay marked "not yet measured — contributions welcome"
+# until someone with a GPU runs scripts/benchmark-local.py against it.
+
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # Redefine only the keys whose default changes with the bigger model; an
+  # explicit GENERATION_MODEL in the environment still wins over both files.
+  model-init:
+    environment:
+      GENERATION_MODEL: ${GENERATION_MODEL:-qwen3.5:9b}
+
+  reed:
+    environment:
+      - REED_OLLAMA_CHAT_MODEL=${GENERATION_MODEL:-qwen3.5:9b}
+
+  open-webui:
+    environment:
+      DEFAULT_MODELS: ${GENERATION_MODEL:-qwen3.5:9b}

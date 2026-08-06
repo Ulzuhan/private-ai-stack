@@ -7,6 +7,9 @@
 # Backup archives
 backups/
 
+# Air-gap bundle output (scripts/package-offline.sh)
+dist/
+
 # OS noise
 .DS_Store
 
