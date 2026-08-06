@@ -1,0 +1,161 @@
+name: Benchmarks
+
+# Manual only: this is a measurement rig, not a gate. Anyone who forks the
+# repo can dispatch it on their own runner and compare numbers — "works on
+# my machine" raised to "works on yours, and here is the receipt". Results
+# land in the step summary and as an artifact; the curated tables live in
+# docs/benchmarking.md with the platform declared per number.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: benchmarks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  COMPOSE_FILE: docker-compose.yml:docker-compose.ci.yml
+  # The tiny CI model, as in the stack job: it proves the circuit and the
+  # orchestration cost, never answer quality or throughput.
+  GENERATION_MODEL: qwen3.5:0.8b
+
+jobs:
+  ci-metrics:
+    name: ci-metrics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Report and free disk space
+        run: |
+          df -h /
+          sudo docker system prune -af --volumes > /dev/null
+          df -h /
+
+      - name: Record the platform
+        run: |
+          {
+            echo "# CI benchmark — $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo
+            echo "## Platform"
+            echo
+            echo "- runner: ${RUNNER_OS} / ${RUNNER_ARCH} (${RUNNER_NAME:-github-hosted})"
+            echo "- vCPUs: $(nproc) — $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | xargs)"
+            echo "- RAM: $(free -g | awk '/^Mem:/ {print $2}') GB"
+            echo "- docker: $(docker version --format '{{.Server.Version}}')"
+            echo "- generation model: ${GENERATION_MODEL} (CI smoke model — circuit, not quality)"
+            echo
+          } > report.md
+
+      # No actions/cache restore on purpose: the first `up` below measures the
+      # full cold start INCLUDING the model pull, into the empty bind mount.
+      - name: Cold start, with model pull
+        run: |
+          t0=$SECONDS
+          docker compose up -d
+          deadline=$((SECONDS + 900))
+          while :; do
+            state=$(docker compose ps -a --format json 2>/dev/null |
+              jq -r 'select(.Service=="model-init") | .State' || true)
+            [ "$state" = "exited" ] && break
+            if ((SECONDS >= deadline)); then
+              echo "model-init never finished (state: ${state:-unknown})" >&2
+              docker compose logs --no-color model-init >&2
+              exit 1
+            fi
+            sleep 5
+          done
+          t_models=$SECONDS
+          curl --retry 120 --retry-delay 5 --retry-all-errors -fsS \
+            http://127.0.0.1:8000/ready > /dev/null
+          code=000
+          for _ in $(seq 90); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/ || true)
+            [ "$code" = "200" ] && break
+            sleep 5
+          done
+          [ "$code" = "200" ] || { echo "open-webui never served (last: ${code})" >&2; exit 1; }
+          t_ready=$SECONDS
+          ./scripts/smoke-test.sh
+          t_smoke=$SECONDS
+          {
+            echo "## Cold start, with model pull (fresh runner)"
+            echo
+            echo '| Metric | Seconds |'
+            echo '|---|---|'
+            echo "| images pulled + models downloaded (model-init done) | $((t_models - t0)) |"
+            echo "| stack usable (Reed /ready + Open WebUI 200) | $((t_ready - t0)) |"
+            echo "| smoke test passed (LLM answers, Reed cites) | $((t_smoke - t0)) |"
+            echo
+          } >> report.md
+          echo "T_MODELS_WITH_PULL=$((t_models - t0))" >> "$GITHUB_ENV"
+          echo "T_READY_WITH_PULL=$((t_ready - t0))" >> "$GITHUB_ENV"
+
+      - name: RAM per service after the smoke
+        run: |
+          {
+            echo "## RAM per service (docker stats, after smoke)"
+            echo
+            echo '| Service | Memory |'
+            echo '|---|---|'
+            docker stats --no-stream --format '{{.Name}}\t{{.MemUsage}}' |
+              sort | awk -F'\t' '{printf "| %s | %s |\n", $1, $2}'
+            echo
+          } >> report.md
+
+      # `down` without -v: the CI override bind-mounts the model store, so the
+      # second start measures the cold start with the models already on disk.
+      - name: Cold start, models cached on disk
+        run: |
+          docker compose down
+          t0=$SECONDS
+          docker compose up -d
+          deadline=$((SECONDS + 600))
+          while :; do
+            state=$(docker compose ps -a --format json 2>/dev/null |
+              jq -r 'select(.Service=="model-init") | .State' || true)
+            [ "$state" = "exited" ] && break
+            if ((SECONDS >= deadline)); then
+              echo "model-init never finished (state: ${state:-unknown})" >&2
+              exit 1
+            fi
+            sleep 3
+          done
+          curl --retry 120 --retry-delay 5 --retry-all-errors -fsS \
+            http://127.0.0.1:8000/ready > /dev/null
+          code=000
+          for _ in $(seq 90); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/ || true)
+            [ "$code" = "200" ] && break
+            sleep 5
+          done
+          [ "$code" = "200" ] || { echo "open-webui never served (last: ${code})" >&2; exit 1; }
+          t_ready=$SECONDS
+          {
+            echo "## Cold start, models already on disk"
+            echo
+            echo '| Metric | Seconds |'
+            echo '|---|---|'
+            echo "| stack usable (Reed /ready + Open WebUI 200) | $((t_ready - t0)) |"
+            echo
+          } >> report.md
+
+      - name: Publish the report
+        run: |
+          cat report.md
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+          cp report.md benchmarks-ci.md
+
+      - name: Upload the report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: benchmarks-ci
+          path: benchmarks-ci.md
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
