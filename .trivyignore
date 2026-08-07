@@ -81,10 +81,12 @@ CVE-2026-69247
 CVE-2026-69249
 GHSA-537c-gmf6-5ccf
 
-# --- qdrant/qdrant:v1.18.3 (latest release) ---------------------------------
-# Dashboard npm dependencies, Rust crates (pyo3, quinn-proto) and tar —
-# including CVE-2026-59873 (CRITICAL, tar). Qdrant publishes no host port;
-# access goes through Reed's API or `docker compose exec`.
+# --- qdrant/qdrant:v1.19.0 (latest release) ---------------------------------
+# Dashboard npm dependencies, Rust crates (pyo3, quinn-proto) and tar. Qdrant
+# publishes no host port; access goes through Reed's API or
+# `docker compose exec`. Entries carried over from v1.18.3 — any the bump
+# fixed are inert (ignoring an absent finding is a no-op) and get pruned on
+# the next reviewed rescan.
 CVE-2026-13149
 CVE-2026-14257
 CVE-2026-59869
@@ -95,6 +97,14 @@ GHSA-36hh-v3qg-5jq4
 GHSA-4w2j-m93h-cj5j
 GHSA-gcfj-64vw-6mp9
 GHSA-r28c-9q8g-f849
+# js-yaml < 4.3.1 in the dashboard's npm tree: quadratic CPU burn parsing a
+# crafted !!omap YAML. Exploiting it means making the dashboard parse
+# attacker YAML — and the dashboard is reachable only from the stack's own
+# network (no host port, loopback-only deployment). The fix landed in
+# js-yaml 4.3.1 on 2026-08-06, one day after v1.19.0 was cut, so no qdrant
+# image carries it yet; the weekly rescan and the next qdrant release are
+# this entry's exit path. Added 2026-08-07.
+GHSA-5p4m-2wfm-xmqj
 
 # --- ghcr.io/ulzuhan/reed:0.4.1 ---------------------------------------------
 # Clean as of 2026-08-05 — no exceptions needed, and the bar it sets is the

@@ -58,7 +58,7 @@ flowchart LR
 |---|---|---|
 | [Ollama](https://ollama.com) | `ollama/ollama:0.32.5` | Local inference, shared by the whole stack |
 | model-init (one-shot) | `ollama/ollama:0.32.5` | Pulls the models on first `up` — keeps the quickstart a single command |
-| [Qdrant](https://qdrant.tech) | `qdrant/qdrant:v1.18.3` | Vector store behind the RAG service, never exposed to the host |
+| [Qdrant](https://qdrant.tech) | `qdrant/qdrant:v1.19.0` | Vector store behind the RAG service, never exposed to the host |
 | [Open WebUI](https://github.com/open-webui/open-webui) | `ghcr.io/open-webui/open-webui:v0.11.0` | General chat UI over the shared models |
 | [Reed](https://github.com/Ulzuhan/reed) | `ghcr.io/ulzuhan/reed:0.4.1` | Document RAG with citations, hybrid retrieval and its own UI |
 

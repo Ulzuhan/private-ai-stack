@@ -28,7 +28,7 @@ flowchart LR
 |---|---|---|
 | Ollama | `ollama/ollama:0.32.5` | The de-facto local inference server; one instance shared by chat and RAG because two loaded models don't fit consumer RAM |
 | model-init | (reuses the Ollama image) | One-shot service that pulls the models on first `up` — without it "one command to run everything" would be a false promise |
-| Qdrant | `qdrant/qdrant:v1.18.3` | Vector store behind Reed; internal only, never published to the host |
+| Qdrant | `qdrant/qdrant:v1.19.0` | Vector store behind Reed; internal only, never published to the host |
 | Open WebUI | `ghcr.io/open-webui/open-webui:v0.11.0` | The most complete local chat UI; configured exclusively through env vars |
 | Reed | `ghcr.io/ulzuhan/reed:0.4.1` | Document RAG built for verifiability: calibrated hybrid retrieval, clickable citations, versioned documents, refusals when the evidence isn't there |
 
