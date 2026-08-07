@@ -81,10 +81,12 @@ CVE-2026-69247
 CVE-2026-69249
 GHSA-537c-gmf6-5ccf
 
-# --- qdrant/qdrant:v1.18.3 (latest release) ---------------------------------
-# Dashboard npm dependencies, Rust crates (pyo3, quinn-proto) and tar —
-# including CVE-2026-59873 (CRITICAL, tar). Qdrant publishes no host port;
-# access goes through Reed's API or `docker compose exec`.
+# --- qdrant/qdrant:v1.19.0 (latest release) ---------------------------------
+# Dashboard npm dependencies, Rust crates (pyo3, quinn-proto) and tar. Qdrant
+# publishes no host port; access goes through Reed's API or
+# `docker compose exec`. Entries carried over from v1.18.3 — any the bump
+# fixed are inert (ignoring an absent finding is a no-op) and get pruned on
+# the next reviewed rescan.
 CVE-2026-13149
 CVE-2026-14257
 CVE-2026-59869
