@@ -97,6 +97,14 @@ GHSA-36hh-v3qg-5jq4
 GHSA-4w2j-m93h-cj5j
 GHSA-gcfj-64vw-6mp9
 GHSA-r28c-9q8g-f849
+# js-yaml < 4.3.1 in the dashboard's npm tree: quadratic CPU burn parsing a
+# crafted !!omap YAML. Exploiting it means making the dashboard parse
+# attacker YAML — and the dashboard is reachable only from the stack's own
+# network (no host port, loopback-only deployment). The fix landed in
+# js-yaml 4.3.1 on 2026-08-06, one day after v1.19.0 was cut, so no qdrant
+# image carries it yet; the weekly rescan and the next qdrant release are
+# this entry's exit path. Added 2026-08-07.
+GHSA-5p4m-2wfm-xmqj
 
 # --- ghcr.io/ulzuhan/reed:0.4.1 ---------------------------------------------
 # Clean as of 2026-08-05 — no exceptions needed, and the bar it sets is the
