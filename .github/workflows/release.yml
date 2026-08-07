@@ -1,0 +1,164 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Quality gate
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci.yml
+    with:
+      concurrency-scope: release
+
+  package:
+    name: Build and attest the air-gap bundle
+    runs-on: ubuntu-latest
+    needs: quality
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Validate the tag against the changelog and main
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          # The tag must name the newest versioned section of the changelog:
+          # the first "## [x.y.z] - date" heading. Skipping it would publish
+          # artifacts whose notes do not match the tag.
+          LATEST=$(grep -m1 -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+\] - [0-9]{4}-[0-9]{2}-[0-9]{2}' CHANGELOG.md |
+            sed -E 's/^## \[([0-9.]+)\].*/\1/')
+          test "${TAG_VERSION}" = "${LATEST}"
+          # A release tag only makes sense on the tip of main: anything else
+          # publishes code the required checks never saw together.
+          git fetch origin main --no-tags
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+
+      - name: Report and free disk space
+        run: |
+          df -h /
+          sudo docker system prune -af --volumes > /dev/null
+          df -h /
+
+      # No GENERATION_MODEL override here: the published bundle is the real
+      # deliverable, so it carries the default model set (qwen3.5:4b +
+      # embeddinggemma), not the tiny CI pair.
+      - name: Build the offline bundle
+        run: ./scripts/package-offline.sh dist
+
+      - name: Verify the bundle checksum
+        run: cd dist && sha256sum -c private-ai-stack-offline.tar.gz.sha256
+
+      - name: Split the bundle, checksum the parts, extract the notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          mkdir release
+          # Release assets cap at 2 GB each and the bundle is several GB;
+          # publish it as numbered parts that `cat` reassembles in order.
+          split -b 1900m -d dist/private-ai-stack-offline.tar.gz \
+            release/private-ai-stack-offline.tar.gz.part-
+          cp dist/private-ai-stack-offline.tar.gz.sha256 release/
+          (
+            cd release
+            sha256sum private-ai-stack-offline.tar.gz.part-* > SHA256SUMS
+          )
+          awk -v header="## [${TAG_VERSION}]" '
+            index($0, header) == 1 { found = 1; next }
+            found && (/^## \[/ || /^\[/) { exit }
+            found { print }
+            END { if (!found) exit 1 }
+          ' CHANGELOG.md > release/RELEASE_NOTES.md
+          test -s release/RELEASE_NOTES.md
+          cat >> release/RELEASE_NOTES.md <<'EOF'
+
+          ### Air-gap bundle
+
+          `private-ai-stack-offline.tar.gz` carries the pinned images, the
+          default models (`qwen3.5:4b` + `embeddinggemma`), their license
+          terms and an installer. It is published split into parts (release
+          assets cap at 2 GB); reassemble and verify before transferring:
+
+          ```bash
+          cat private-ai-stack-offline.tar.gz.part-* > private-ai-stack-offline.tar.gz
+          sha256sum -c private-ai-stack-offline.tar.gz.sha256
+          ```
+
+          The parts' provenance is attested by the workflow that built them:
+
+          ```bash
+          gh attestation verify private-ai-stack-offline.tar.gz.part-00 \
+            --repo Ulzuhan/private-ai-stack
+          ```
+
+          Install procedure: [docs/air-gap.md](https://github.com/Ulzuhan/private-ai-stack/blob/main/docs/air-gap.md).
+          EOF
+          ls -lh release/
+
+      - name: Attest bundle provenance
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373  # v4.1.1
+        with:
+          subject-path: release/private-ai-stack-offline.tar.gz.part-*
+
+      - name: Preserve release artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: private-ai-stack-release
+          path: release/
+          if-no-files-found: error
+          compression-level: 0
+
+  publish:
+    name: Publish GitHub release
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    environment: release
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: private-ai-stack-release
+          path: release
+
+      - name: Create or refresh the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TITLE="private-ai-stack ${GITHUB_REF_NAME#v}"
+          ASSETS=(
+            release/private-ai-stack-offline.tar.gz.part-*
+            release/private-ai-stack-offline.tar.gz.sha256
+            release/SHA256SUMS
+          )
+          if gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" "${ASSETS[@]}" \
+              --clobber --repo "${GITHUB_REPOSITORY}"
+            gh release edit "${GITHUB_REF_NAME}" --title "${TITLE}" \
+              --notes-file release/RELEASE_NOTES.md --latest --repo "${GITHUB_REPOSITORY}"
+          else
+            gh release create "${GITHUB_REF_NAME}" "${ASSETS[@]}" --verify-tag \
+              --title "${TITLE}" --notes-file release/RELEASE_NOTES.md --latest \
+              --repo "${GITHUB_REPOSITORY}"
+          fi
