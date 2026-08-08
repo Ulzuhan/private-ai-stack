@@ -41,17 +41,14 @@ docker compose run --rm --no-deps -T \
   reed sh -c 'find /data -mindepth 1 -delete'
 
 log "restoring reed archive from ${archive}"
-# Reed's restore builds a scratch directory next to REED_DATA_DIR and renames
-# it into place. With the service's read-only rootfs that scratch lands on /
-# and fails, so the volume is mounted at /restore instead and REED_DATA_DIR
-# pointed inside it: scratch and target then share the volume's filesystem.
+# Reed 0.5.0 stages the restore inside REED_DATA_DIR itself, so the service's
+# own /data mount is all this needs. Earlier versions staged beside it, which
+# on a read-only rootfs meant staging on / — hence the second mount and the
+# REED_DATA_DIR override this used to carry (reed#35). Pinning 0.5.0 or newer
+# is what makes the plain form below correct.
 docker compose run --rm --no-deps -T \
-  --volume reed_data:/restore \
   --volume "$PWD/${dir}:/backup:ro" \
-  -e REED_DATA_DIR=/restore/data \
-  reed sh -c 'reed backup restore /backup/reed-backup.tar.gz \
-    && (mv /restore/data/* /restore/data/.[!.]* /restore/ 2> /dev/null || true) \
-    && rmdir /restore/data'
+  reed reed backup restore /backup/reed-backup.tar.gz
 
 log "restoring qdrant snapshot into ${COLLECTION}"
 docker compose run --rm --no-deps -T \
