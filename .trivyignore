@@ -106,6 +106,6 @@ GHSA-r28c-9q8g-f849
 # this entry's exit path. Added 2026-08-07.
 GHSA-5p4m-2wfm-xmqj
 
-# --- ghcr.io/ulzuhan/reed:0.4.1 ---------------------------------------------
-# Clean as of 2026-08-05 — no exceptions needed, and the bar it sets is the
+# --- ghcr.io/ulzuhan/reed:0.5.0 ---------------------------------------------
+# Clean as of 2026-08-08 — no exceptions needed, and the bar it sets is the
 # one this file is expected to converge to.
