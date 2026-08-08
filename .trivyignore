@@ -80,6 +80,27 @@ CVE-2026-69244
 CVE-2026-69247
 CVE-2026-69249
 GHSA-537c-gmf6-5ccf
+# GitPython <= 3.1.57, fixed in 3.1.58: five ways to smuggle unsafe options or
+# attacker-chosen names into git — option forwarding in `IndexFile.from_tree`,
+# `Repo.init(template=…)` hooks, unvalidated `.gitmodules` section names,
+# git-config option-name injection, and a bypass of the unsafe-option guard.
+# Every one of them needs Open WebUI to run a git operation on input someone
+# else chose. This deployment sets OFFLINE_MODE (no update checks, no external
+# APIs), keeps chat file upload off and binds the UI to loopback, so there is
+# no path here that clones or rewrites a repository on request. Exit: the next
+# image built on 3.1.58. Added 2026-08-08.
+GHSA-4gmw-gg2m-w46p
+GHSA-9rj7-rf2p-w77r
+GHSA-hmq2-w58f-27jc
+GHSA-jm78-9fvv-mhgr
+GHSA-wvpp-8hx9-p66j
+# pymdown-extensions <= 11.0.0, fixed in 11.0.1: exponential backtracking in
+# four inline processors, so one crafted Markdown line under 50 bytes burns
+# CPU on the rendering thread. The Markdown reaching it here is the operator's
+# own messages and their local model's output on a single-user loopback stack:
+# the worst case is hanging your own container, not a shared service. Exit:
+# the next image built on 11.0.1. Added 2026-08-08.
+CVE-2026-67422
 
 # --- qdrant/qdrant:v1.19.0 (latest release) ---------------------------------
 # Dashboard npm dependencies, Rust crates (pyo3, quinn-proto) and tar. Qdrant
@@ -105,6 +126,14 @@ GHSA-r28c-9q8g-f849
 # image carries it yet; the weekly rescan and the next qdrant release are
 # this entry's exit path. Added 2026-08-07.
 GHSA-5p4m-2wfm-xmqj
+# nanoid in the same dashboard tree: an infinite loop in customAlphabet and
+# customRandom when the size is zero (CVE-2026-67213, fixed in 3.3.17/5.1.6),
+# and in the non-secure generator when the size is negative (CVE-2026-67214,
+# fixed in 3.3.16/5.1.16). Both need the caller to pass a size the dashboard
+# never takes from input, and the dashboard has no published port either way.
+# Exit: the next qdrant release. Added 2026-08-08.
+CVE-2026-67213
+CVE-2026-67214
 
 # --- ghcr.io/ulzuhan/reed:0.4.1 ---------------------------------------------
 # Clean as of 2026-08-05 — no exceptions needed, and the bar it sets is the
