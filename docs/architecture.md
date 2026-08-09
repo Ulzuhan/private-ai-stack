@@ -30,7 +30,7 @@ flowchart LR
 | model-init | (reuses the Ollama image) | One-shot service that pulls the models on first `up` — without it "one command to run everything" would be a false promise |
 | Qdrant | `qdrant/qdrant:v1.19.0` | Vector store behind Reed; internal only, never published to the host |
 | Open WebUI | `ghcr.io/open-webui/open-webui:v0.11.0` | The most complete local chat UI; configured exclusively through env vars |
-| Reed | `ghcr.io/ulzuhan/reed:0.5.0` | Document RAG built for verifiability: calibrated hybrid retrieval, clickable citations, versioned documents, refusals when the evidence isn't there |
+| Reed | `ghcr.io/ulzuhan/reed:0.5.1` | Document RAG built for verifiability: calibrated hybrid retrieval, clickable citations, versioned documents, refusals when the evidence isn't there |
 
 Every image is pinned by tag **and digest**; Dependabot keeps the pins fresh
 and the security workflow scans exactly the pinned set, so a bump can never
