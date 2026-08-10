@@ -135,6 +135,6 @@ GHSA-5p4m-2wfm-xmqj
 CVE-2026-67213
 CVE-2026-67214
 
-# --- ghcr.io/ulzuhan/reed:0.5.0 ---------------------------------------------
-# Clean as of 2026-08-08 — no exceptions needed, and the bar it sets is the
+# --- ghcr.io/ulzuhan/reed:0.5.1 ---------------------------------------------
+# Clean as of 2026-08-09 — no exceptions needed, and the bar it sets is the
 # one this file is expected to converge to.

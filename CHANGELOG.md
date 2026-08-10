@@ -6,6 +6,26 @@ releases contain compatible fixes.
 
 ## [Unreleased]
 
+### Changed
+
+- Track Reed 0.5.1. Reed 0.5.0 added `POST /v1/search` — ranked evidence
+  without generation, with its own rate limit and retrieval-thread budget —
+  and fixed `reed backup restore` under the shipped compose by staging
+  inside the target data directory; 0.5.1 tightens the data-directory
+  permissions on bare-metal installs (the container was never affected).
+- Drop the restore workaround the pre-0.5.0 Reed image made necessary:
+  `scripts/restore.sh` no longer mounts a separate `/restore` volume with
+  `REED_DATA_DIR` pointed inside it — the restore path is the simple form
+  again, and the round-trip in CI proves it on every change.
+
+### Security
+
+- Justify the eight advisories the 2026-08-08 Trivy database refresh added
+  across the Open WebUI and Qdrant images — each with the file's standing
+  rationale: fixed upstream, no patched image to pin yet, loopback-only
+  exposure, the weekly rescan and the next upstream release as the exit
+  path. Reed's image keeps its zero-exception section.
+
 ## [0.1.0] - 2026-08-06
 
 First public release: a local-first AI stack — general chat plus document Q&A with verifiable
