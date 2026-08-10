@@ -6,6 +6,8 @@ releases contain compatible fixes.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-08-10
+
 ### Changed
 
 - Track Reed 0.5.1. Reed 0.5.0 added `POST /v1/search` — ranked evidence
@@ -75,5 +77,6 @@ CI on a clean runner on every change.
 - The production override (TLS + auth in front of the UIs) is deliberately not in this
   release: it lands when it has its own CI validation. The roadmap in the README tracks it.
 
-[Unreleased]: https://github.com/Ulzuhan/private-ai-stack/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Ulzuhan/private-ai-stack/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/Ulzuhan/private-ai-stack/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Ulzuhan/private-ai-stack/releases/tag/v0.1.0
