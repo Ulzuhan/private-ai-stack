@@ -20,10 +20,15 @@ COMPOSE_FILES = [
     ROOT / "docker-compose.ci.yml",
 ]
 
-# ${VAR} and ${VAR:-default} interpolations.
+# `${VAR}` and `${VAR:-default}` interpolations.
 INTERPOLATED = re.compile(r"\$\{([A-Z][A-Z0-9_]*)[^}]*\}")
 # `# VAR=value` documents a deliberately commented knob.
 ASSIGNMENT = re.compile(r"^#?\s*([A-Z][A-Z0-9_]*)\s*=", re.MULTILINE)
+
+# Documented variables whose consumer is a script, not a compose file.
+# test_reed_pipe.py pins the other direction: the installer must actually
+# read each of these, so this list can never become a quiet loophole.
+SCRIPT_CONSUMED = {"WEBUI_ADMIN_API_KEY"}
 
 
 def _used() -> set[str]:
@@ -51,7 +56,7 @@ def test_every_compose_variable_is_documented() -> None:
 
 
 def test_every_documented_variable_is_used() -> None:
-    unused = _documented() - _used()
+    unused = _documented() - _used() - SCRIPT_CONSUMED
     assert not unused, f".env.example documents variables nothing consumes: {sorted(unused)}"
 
 
