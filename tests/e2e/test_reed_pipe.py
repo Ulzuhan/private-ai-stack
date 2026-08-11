@@ -24,11 +24,18 @@ chat/Messages/Citations.svelte, Citations/CitationModal.svelte):
 Answer *quality* is never asserted: CI runs the 0.8b model, which proves the
 circuit only. The citation cards come from Reed's sources regardless of how
 well the tiny model phrases its markers.
+
+Two lessons from the first CI run, now encoded here: `not_to_be_empty`
+passes vacuously while no `.markdown-prose` exists (a non-streaming pipe
+renders its message only on return — waits must be positive assertions),
+and a suite that uploads documents must delete them at teardown, because
+test_reed_ui.py asserts on a single strict-mode `.doc-name`.
 """
 
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -66,10 +73,13 @@ def _admin_token(api, webui_url: str) -> str:
 
 
 @pytest.fixture(scope="module")
-def reed_document(playwright: Playwright, reed_url: str) -> str:
+def reed_document(playwright: Playwright, reed_url: str):
     """A document only this journey asks about, so retrieval cannot collide
-    with the expenses policy the other suites upload."""
+    with the expenses policy the other suites upload — and deleted again at
+    teardown, because test_reed_ui.py asserts on a single `.doc-name` in the
+    Reed UI and a leftover document breaks its strict-mode locator."""
     api = playwright.request.new_context()
+    document_id = None
     try:
         upload = api.post(
             f"{reed_url}/v1/documents",
@@ -93,8 +103,10 @@ def reed_document(playwright: Playwright, reed_url: str) -> str:
             assert status != "error", doc.text()
             time.sleep(2)
         assert status == "ready", f"ingestion never finished (last: {status})"
-        return document_id
+        yield document_id
     finally:
+        if document_id:
+            api.delete(f"{reed_url}/v1/documents/{document_id}")
         api.dispose()
 
 
@@ -187,15 +199,22 @@ def test_reed_documents_model_answers_with_clickable_citations(
     send.click()
 
     # Generous: the pipe's HTTP hop plus a cold 0.8b generation on a CPU
-    # runner can take minutes. The assertion is that an answer renders —
-    # never its quality.
+    # runner can take minutes. The assertion must be a positive one:
+    # `not_to_be_empty` passes *vacuously* while zero `.markdown-prose`
+    # elements exist — which is exactly the case for minutes here, because a
+    # non-streaming pipe renders its message only when it returns. (That
+    # trap cost this test its first CI run.)
     answer = page.locator(".markdown-prose").last
-    expect(answer).not_to_be_empty(timeout=300_000)
+    expect(answer).to_have_text(re.compile(r"\S"), timeout=300_000)
 
-    # The feature: Reed's sources as native citation cards. The pill starts
-    # collapsed; expand it, then open the first source's modal.
+    # The feature: Reed's sources as native citation cards. Citation events
+    # merge live into the pending assistant message (chatEventHandler in
+    # Chat.svelte pushes them onto message.sources — the same path the
+    # pipe's status event already exercised on its way to the status pill).
+    # The pill starts collapsed; expand it, then open the first source's
+    # modal.
     pill = page.locator('button[aria-expanded][aria-label*="source"]').last
-    expect(pill).to_be_visible(timeout=60_000)
+    expect(pill).to_be_visible(timeout=120_000)
     if pill.get_attribute("aria-expanded") == "false":
         pill.click()
     source = page.locator('button[aria-label^="View source:"]').first
