@@ -22,6 +22,12 @@ releases contain compatible fixes.
 - `ENABLE_API_KEYS=true` in the Open WebUI service: upstream defaults it to
   false, and the documented install path needs personal API keys to exist.
   Nothing ships a key; each deployment creates its own.
+- A browser E2E journey for the pipe (`tests/e2e/test_reed_pipe.py`): mints
+  an admin API key, runs the installer exactly as a user would, picks "Reed
+  Documents" in the model selector, asks about a document, and asserts the
+  answer renders with native citation cards that expand and open. Selectors
+  are verified against the pinned Open WebUI v0.11.0 sources; answer quality
+  is never asserted — the tiny CI model proves the circuit only.
 
 ## [0.1.1] - 2026-08-10
 
