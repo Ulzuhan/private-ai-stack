@@ -74,6 +74,25 @@ always go through the RAG pipeline — retrieval you can inspect, citations you
 can click, refusals when the documents don't answer. The browser E2E keeps
 this boundary as a permanent regression check.
 
+### An optional third door: your own assistant
+
+[`reed-mcp`](https://github.com/Ulzuhan/reed-mcp) connects an
+[MCP](https://modelcontextprotocol.io) host — Claude Desktop, Claude Code — to
+the Reed in this stack, as four read-only tools. The assistant retrieves from
+your index and writes the cited answer with its own model; the documents never
+leave the machine.
+
+```bash
+claude mcp add reed -- uvx --from git+https://github.com/Ulzuhan/reed-mcp@v0.1.0 reed-mcp
+```
+
+It runs on the host rather than in the stack, and its default target is
+`http://localhost:8000` — where this compose file binds Reed unless `REED_PORT`
+says otherwise, so the command above usually needs no configuration. Point it
+elsewhere with `REED_MCP_URL`, and when Reed runs behind the production
+override with `REED_API_KEY` set, pass the same value as `REED_MCP_API_KEY`.
+Nothing here depends on it: leave it out and the stack is unchanged.
+
 ### Design decisions and trade-offs
 
 | Decision | Alternative discarded | Why |
