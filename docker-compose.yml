@@ -135,6 +135,10 @@ services:
       # Keep configuration in env, not in the database: without this, every
       # flag below is written once on first boot and silently ignored after.
       ENABLE_PERSISTENT_CONFIG: "false"
+      # Off by default upstream. scripts/install-reed-pipe.sh authenticates
+      # with an admin API key to register the Reed pipe as code; nothing
+      # ships a key — each deployment creates its own (see .env.example).
+      ENABLE_API_KEYS: "true"
       # Documents belong to Reed. Uploading here would use Open WebUI's own
       # RAG and bypass the pipeline this stack is built around.
       USER_PERMISSIONS_CHAT_FILE_UPLOAD: "false"

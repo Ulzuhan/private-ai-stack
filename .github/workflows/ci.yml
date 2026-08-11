@@ -144,6 +144,23 @@ jobs:
       - name: Smoke test
         run: ./scripts/smoke-test.sh
 
+      # The Reed pipe is code in this repo: prove its installer against the
+      # live stack, twice — the second run must be an idempotent refresh. The
+      # first signup becomes the admin upstream, so CI signs up over the API
+      # and lets the installer sign in; the documented user path (API key) is
+      # what .env.example describes. Runs before the round-trip below, which
+      # wipes every volume.
+      - name: Install the Reed pipe (twice — idempotency)
+        run: |
+          curl -fsS -X POST http://127.0.0.1:3000/api/v1/auths/signup \
+            -H 'content-type: application/json' \
+            -d '{"name":"CI Admin","email":"ci-admin@example.com","password":"correct horse battery staple"}' \
+            | jq -e .token > /dev/null
+          export WEBUI_ADMIN_EMAIL=ci-admin@example.com
+          export WEBUI_ADMIN_PASSWORD="correct horse battery staple"
+          ./scripts/install-reed-pipe.sh
+          ./scripts/install-reed-pipe.sh
+
       # A backup script nobody has restored from is a hope, not a backup: take
       # the pair, wipe every volume, bring the stack back and restore into it,
       # then prove the restored document still answers with citations.

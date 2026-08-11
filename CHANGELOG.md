@@ -6,6 +6,23 @@ releases contain compatible fixes.
 
 ## [Unreleased]
 
+### Added
+
+- The "Reed Documents" pipe: document Q&A inside the Open WebUI chat, with
+  Reed as the only RAG pipeline. The pipe (`openwebui/reed_pipe.py`) appears
+  as a selectable model, proxies Reed's `/v1/ask` so answers keep their
+  calibrated generation, citation audit and honest refusals, and turns every
+  returned source into a native, clickable citation card.
+- `scripts/install-reed-pipe.sh`: installs or refreshes the pipe as code via
+  Open WebUI's functions REST API — create/update/toggle/valves, never the
+  destructive `/sync` — idempotently, and proves at the end that the pipe is
+  selectable as a model. Authenticates with an admin API key from `.env`
+  (`WEBUI_ADMIN_API_KEY`) or, as CI does, an email/password sign-in. The
+  stack CI job runs it twice against the live stack on every change.
+- `ENABLE_API_KEYS=true` in the Open WebUI service: upstream defaults it to
+  false, and the documented install path needs personal API keys to exist.
+  Nothing ships a key; each deployment creates its own.
+
 ## [0.1.1] - 2026-08-10
 
 ### Changed
