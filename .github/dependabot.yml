@@ -4,6 +4,11 @@
 # - uv: the test tooling in pyproject.toml + uv.lock
 # There is no "docker" ecosystem entry: the repo builds no Dockerfiles —
 # every image reference lives in the compose files.
+#
+# Each ecosystem is grouped so a week's bumps arrive as one pull request.
+# Ungrouped, an action used by three workflows still arrives once, but two
+# actions arrive twice — and with `main` requiring an up-to-date branch,
+# every extra pull request costs a full gate run and puts the others behind.
 version: 2
 updates:
   - package-ecosystem: docker-compose
@@ -11,13 +16,22 @@ updates:
     schedule:
       interval: weekly
       day: wednesday
+    groups:
+      images:
+        patterns: ["*"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
       day: wednesday
+    groups:
+      actions:
+        patterns: ["*"]
   - package-ecosystem: uv
     directory: /
     schedule:
       interval: weekly
       day: wednesday
+    groups:
+      test-tooling:
+        patterns: ["*"]
