@@ -46,6 +46,11 @@ releases contain compatible fixes.
   had been describing the whole integration as a roadmap item while it sat in
   `main`.
 
+- The Reed UI journey waits for a first token on the same budget as the rest
+  of the suite. At 180 s it was the tightest assertion in it, and it flaked on
+  the release run with the bubble still rendering its typing cursor — the
+  stream working, not a broken one.
+
 ### Changed
 
 - Track Reed 0.6.0, and take the tmpfs budget it implies. Reed now bounds how
