@@ -6,6 +6,37 @@ releases contain compatible fixes.
 
 ## [Unreleased]
 
+### Added
+
+- The "Reed Documents" pipe: document Q&A inside the Open WebUI chat, with
+  Reed as the only RAG pipeline. The pipe (`openwebui/reed_pipe.py`) appears
+  as a selectable model, proxies Reed's `/v1/ask` so answers keep their
+  calibrated generation, citation audit and honest refusals, and turns every
+  returned source into a native, clickable citation card.
+- `scripts/install-reed-pipe.sh`: installs or refreshes the pipe as code via
+  Open WebUI's functions REST API — create/update/toggle/valves, never the
+  destructive `/sync` — idempotently, and proves at the end that the pipe is
+  selectable as a model. Authenticates with an admin API key from `.env`
+  (`WEBUI_ADMIN_API_KEY`) or, as CI does, an email/password sign-in. The
+  stack CI job runs it twice against the live stack on every change.
+- `ENABLE_API_KEYS=true` in the Open WebUI service: upstream defaults it to
+  false, and the documented install path needs personal API keys to exist.
+  Nothing ships a key; each deployment creates its own.
+- A browser E2E journey for the pipe (`tests/e2e/test_reed_pipe.py`): mints
+  an admin API key, runs the installer exactly as a user would, picks "Reed
+  Documents" in the model selector, asks about a document, and asserts the
+  answer renders with native citation cards that expand and open. Selectors
+  are verified against the pinned Open WebUI v0.11.0 sources; answer quality
+  is never asserted — the tiny CI model proves the circuit only.
+- The pipe short-circuits Open WebUI's background tasks (chat titles,
+  follow-up suggestions) via `__task__` instead of spending a Reed lookup on
+  each meta-prompt — they arrive through the selected model, which is the
+  pipe.
+- The CI compose override gives Reed a wider provider timeout
+  (`REED_PROVIDER_TIMEOUT_SECONDS=240`): on the 4-vCPU runner, cold 0.8b
+  generation exceeds Reed's calibrated 120 s default and `/v1/ask` answers
+  502. Production keeps Reed's default.
+
 ### Changed
 
 - Track Reed 0.6.0, and take the tmpfs budget it implies. Reed now bounds how
@@ -32,23 +63,6 @@ releases contain compatible fixes.
   review are named with their exposure — util-linux `mount` TOCTOUs in a
   container that mounts nothing, an OpenSSL QUIC-server DoS in a service that
   speaks HTTP and gRPC. Reed 0.6.0 needs no entries at all.
-
-### Added
-
-- The "Reed Documents" pipe: document Q&A inside the Open WebUI chat, with
-  Reed as the only RAG pipeline. The pipe (`openwebui/reed_pipe.py`) appears
-  as a selectable model, proxies Reed's `/v1/ask` so answers keep their
-  calibrated generation, citation audit and honest refusals, and turns every
-  returned source into a native, clickable citation card.
-- `scripts/install-reed-pipe.sh`: installs or refreshes the pipe as code via
-  Open WebUI's functions REST API — create/update/toggle/valves, never the
-  destructive `/sync` — idempotently, and proves at the end that the pipe is
-  selectable as a model. Authenticates with an admin API key from `.env`
-  (`WEBUI_ADMIN_API_KEY`) or, as CI does, an email/password sign-in. The
-  stack CI job runs it twice against the live stack on every change.
-- `ENABLE_API_KEYS=true` in the Open WebUI service: upstream defaults it to
-  false, and the documented install path needs personal API keys to exist.
-  Nothing ships a key; each deployment creates its own.
 
 ## [0.1.1] - 2026-08-10
 

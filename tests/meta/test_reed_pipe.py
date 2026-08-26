@@ -42,6 +42,10 @@ def test_the_pipe_is_a_proxy_of_reeds_ask_endpoint() -> None:
     assert "/v1/search" not in source, (
         "retrieval-without-generation is for callers with their own model; the pipe proxies /v1/ask"
     )
+    assert "__task__" in source, (
+        "Open WebUI runs chat titles and follow-ups through the selected model; "
+        "the pipe must short-circuit __task__ instead of spending Reed lookups on them"
+    )
 
 
 def test_the_pipe_emits_native_citations() -> None:

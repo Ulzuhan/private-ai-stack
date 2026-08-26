@@ -97,7 +97,16 @@ class Pipe:
         __event_emitter__=None,
         __event_call__=None,
         __metadata__: dict = None,
+        __task__: str = None,
     ) -> str:
+        # Open WebUI runs its background tasks (chat titles, follow-up
+        # suggestions) through the selected model — which is this pipe. They
+        # are not document questions; each one would waste a slow Reed lookup
+        # on a meta-prompt, so answer them out of band. (__task__ arrives
+        # from metadata.task — backend functions.py in the pinned v0.11.0.)
+        if __task__:
+            return "Reed Documents"
+
         question, history = self._question_and_history(body)
         if question is None:
             return "Send a question and I will look it up in Reed's documents."

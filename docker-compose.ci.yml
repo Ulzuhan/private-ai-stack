@@ -6,3 +6,21 @@ services:
   ollama:
     volumes:
       - ./.ci-cache/ollama:/root/.ollama
+    environment:
+      # Keep both models resident for the whole run. The suite alternates
+      # embeddings and generation, and on a 4-vCPU runner reloading either
+      # costs more than the memory the pair holds (0.8b plus embeddinggemma).
+      OLLAMA_KEEP_ALIVE: "-1"
+
+  reed:
+    environment:
+      # The runner shares 4 vCPUs with a browser and a video recorder, and a
+      # question routed through the pipe reaches the model with its retrieved
+      # context attached — a ~2.4k-token prompt for a 0.8b model to chew
+      # through before it emits anything. Reed's calibrated 120 s default is
+      # not written for that, and 240 s did not hold either: the run before
+      # this one timed out at exactly 240 s. So CI takes the ceiling Reed
+      # allows and cuts the prompt in half at the same time. Production keeps
+      # both defaults, on hardware that is not a shared runner.
+      REED_PROVIDER_TIMEOUT_SECONDS: "600"
+      REED_TOP_K: "2"
