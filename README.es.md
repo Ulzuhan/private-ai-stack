@@ -5,11 +5,11 @@ sobre tus documentos con citas verificables — en un solo
 `docker compose up -d`.** Nada sale de tu máquina: sin APIs cloud, sin
 telemetría, con los modelos en tu propio hardware.
 
-> **Estado: v0.1.0 publicada.** Todo lo que está en `main` funciona y se
-> verifica en CI sobre un runner limpio en cada cambio. Los benchmarks y los
-> perfiles GPU y air-gap están incluidos, y la release publica un paquete
-> air-gap con procedencia atestada; el override de producción queda en la
-> hoja de ruta.
+> **Estado: v0.2.0 publicada.** Todo lo que está en `main` funciona y se
+> verifica en CI sobre un runner limpio en cada cambio, incluido el pipe que
+> lleva las preguntas sobre documentos al chat. Los benchmarks y los perfiles
+> GPU y air-gap están incluidos, y la release publica un paquete air-gap con
+> procedencia atestada; el override de producción queda en la hoja de ruta.
 
 Esta es la versión ejecutiva en español; la documentación técnica completa
 (arquitectura, operación, hardening) vive en el

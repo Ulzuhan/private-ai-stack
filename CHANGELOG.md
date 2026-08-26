@@ -6,6 +6,8 @@ releases contain compatible fixes.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-27
+
 ### Added
 
 - The "Reed Documents" pipe: document Q&A inside the Open WebUI chat, with
@@ -43,6 +45,11 @@ releases contain compatible fixes.
   key — creating it, storing it, rotating it — in `docs/operations.md`, which
   had been describing the whole integration as a roadmap item while it sat in
   `main`.
+
+- The Reed UI journey waits for a first token on the same budget as the rest
+  of the suite. At 180 s it was the tightest assertion in it, and it flaked on
+  the release run with the bubble still rendering its typing cursor — the
+  stream working, not a broken one.
 
 ### Changed
 
@@ -142,6 +149,7 @@ CI on a clean runner on every change.
 - The production override (TLS + auth in front of the UIs) is deliberately not in this
   release: it lands when it has its own CI validation. The roadmap in the README tracks it.
 
-[Unreleased]: https://github.com/Ulzuhan/private-ai-stack/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/Ulzuhan/private-ai-stack/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Ulzuhan/private-ai-stack/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/Ulzuhan/private-ai-stack/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Ulzuhan/private-ai-stack/releases/tag/v0.1.0
