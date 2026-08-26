@@ -90,6 +90,49 @@ hand-rolled first run), later env changes do nothing. Two ways out:
 2. Or keep the volume and change the equivalent settings from its admin
    panel instead of env vars.
 
+## The Reed Documents pipe
+
+The pipe puts document Q&A inside the Open WebUI chat, with Reed doing the
+retrieval and the generation. It is optional: the stack runs identically
+without it.
+
+**Install or refresh it** against a running stack:
+
+```bash
+./scripts/install-reed-pipe.sh
+```
+
+The script is idempotent — it creates the function, or updates it and its
+valves in place, and a second run exits 0 having changed nothing. Run it again
+after pulling a new `openwebui/reed_pipe.py`; the CI stack job runs it twice
+on every pull request for exactly that reason.
+
+**Authentication.** It needs an admin API key, in this order:
+
+1. `WEBUI_ADMIN_API_KEY` in your `.env` — the documented path. Create the key
+   in Open WebUI under *Settings → Account → API keys*, with the admin account
+   the first visit created. `ENABLE_API_KEYS=true` is already set in the
+   compose file; upstream defaults it to false.
+2. `WEBUI_ADMIN_EMAIL` + `WEBUI_ADMIN_PASSWORD` — a sign-in instead. This is
+   what CI uses, where the first signup becomes the admin.
+
+The key is an admin credential: it can install functions. Keep it in `.env`,
+which is gitignored, and out of shell history — the script also reads it from
+the real environment, so `WEBUI_ADMIN_API_KEY=… ./scripts/install-reed-pipe.sh`
+works without writing it to a file at all.
+
+**Rotating it.** Delete the key in *Settings → Account → API keys*, create a
+new one, update `.env`. Nothing needs reinstalling: the key authenticates the
+installer, not the pipe. The pipe talks to Reed, and if Reed itself runs with
+`REED_API_KEY` set (the production override), the pipe's own `REED_API_KEY`
+valve carries it — set that through the installer's valve payload rather than
+by hand, so the value lives in one place.
+
+**Pointing it elsewhere.** `WEBUI_URL` and `REED_URL` override where the
+script looks (defaults: `http://127.0.0.1:3000` and `http://127.0.0.1:8000`).
+Inside the stack the pipe reaches Reed at `http://reed:8000`, which is its
+valve default and needs no configuration.
+
 ## File uploads and the admin caveat
 
 `USER_PERMISSIONS_CHAT_FILE_UPLOAD=false` governs accounts with role
@@ -124,5 +167,6 @@ Deliberately basic in v0.1: `docker compose ps` for health,
 `docker compose logs` for detail, Reed's `/ready` for automation. There is
 no tracing/metrics stack because nothing in the stack emits traces yet —
 shipping an empty dashboard would say the opposite of what this repo
-demonstrates. Real observability (Langfuse, instrumenting Reed upstream and
-Open WebUI via its pipelines) is the v0.2 roadmap item.
+demonstrates. Real observability — Langfuse, with Reed instrumented upstream — is the
+next roadmap item. With document questions now reaching Reed from both the
+chat and Reed's own UI, one instrumentation covers both paths.

@@ -48,6 +48,11 @@ El primer arranque descarga los modelos (~4 GB) automáticamente. Después:
 - **Chat**: <http://127.0.0.1:3000>
 - **Tus documentos**: <http://127.0.0.1:8000>
 
+Y si prefieres preguntar a tus documentos sin salir del chat,
+`./scripts/install-reed-pipe.sh` instala el pipe «Reed Documents»: aparece
+como un modelo más en el selector, pero quien recupera, responde y cita sigue
+siendo Reed. Es opcional; sin él, el stack es exactamente el mismo.
+
 En Mac, usa tu Ollama nativo (Metal) con el override BYO — detalles en el
 [README](README.md#on-a-mac-bring-your-own-ollama).
 

@@ -52,6 +52,44 @@ upload entry stays enabled for them. The operational guidance ("documents go
 to Reed") and the regression test on the role-user boundary are the stack's
 answer — see [operations.md](operations.md#file-uploads-and-the-admin-caveat).
 
+## The pipe: one RAG door, two windows
+
+The rule above says Open WebUI must not become a second RAG door. Asking your
+documents from the chat window does not break it, as long as the chat window
+does no retrieval of its own — and that is exactly what the **Reed Documents**
+pipe (`openwebui/reed_pipe.py`) is built to guarantee. It is a proxy: it takes
+the question, calls Reed's `POST /v1/ask`, and returns what Reed said. It has
+no vector store, no chunker, no prompt of its own, and a meta-test asserts it
+never learns one — the source may not reference `/v1/search`, because
+retrieval without generation is for callers that bring their own model, and
+this one does not.
+
+What the user sees is native Open WebUI: the pipe appears in the model
+selector like any model, and every `sources[i]` Reed returns becomes a
+citation card that expands and opens the document in Reed's own UI. Reed's
+refusal, when the evidence is not there, is passed through untouched rather
+than dressed up as an answer.
+
+Three details worth knowing before reading the code:
+
+- **Installation is code, not clicks.** `scripts/install-reed-pipe.sh` drives
+  Open WebUI's functions REST API — create, update, toggle, valves — and is
+  idempotent. It deliberately never calls the `/sync` endpoint, which would
+  delete every function absent from its payload.
+- **Functions live outside PersistentConfig.** They have their own table, so
+  `ENABLE_PERSISTENT_CONFIG=false` (see the gotcha in
+  [operations.md](operations.md#open-webui-persistentconfig-gotcha)) does not
+  touch an installed pipe, and env stays the source of truth for the rest.
+- **Background prompts do not reach Reed.** Open WebUI runs chat titles and
+  follow-up suggestions through the selected model — which, with the pipe
+  selected, is the pipe. Those arrive with `__task__` set and are answered out
+  of band, because a document lookup for "give this chat a title" is a slow
+  answer to a question nobody asked.
+
+The browser E2E proves the whole circuit on every pull request: install the
+pipe, find it in the selector, ask about an uploaded document, and assert the
+citation cards are there and clickable.
+
 ## State and the consistency pair
 
 Four named volumes: Ollama models, Qdrant storage, Reed data (SQLite
