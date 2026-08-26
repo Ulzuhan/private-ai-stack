@@ -55,6 +55,14 @@ releases contain compatible fixes.
   answer renders with native citation cards that expand and open. Selectors
   are verified against the pinned Open WebUI v0.11.0 sources; answer quality
   is never asserted — the tiny CI model proves the circuit only.
+- The pipe short-circuits Open WebUI's background tasks (chat titles,
+  follow-up suggestions) via `__task__` instead of spending a Reed lookup on
+  each meta-prompt — they arrive through the selected model, which is the
+  pipe.
+- The CI compose override gives Reed a wider provider timeout
+  (`REED_PROVIDER_TIMEOUT_SECONDS=240`): on the 4-vCPU runner, cold 0.8b
+  generation exceeds Reed's calibrated 120 s default and `/v1/ask` answers
+  502. Production keeps Reed's default.
 
 ## [0.1.1] - 2026-08-10
 

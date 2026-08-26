@@ -198,23 +198,25 @@ def test_reed_documents_model_answers_with_clickable_citations(
     expect(send).to_be_enabled(timeout=60_000)
     send.click()
 
-    # Generous: the pipe's HTTP hop plus a cold 0.8b generation on a CPU
-    # runner can take minutes. The assertion must be a positive one:
+    # Wait on the citation pill FIRST: it is the only success-only signal.
+    # The pipe renders its error messages ("Reed could not answer…") as the
+    # answer text, so any answer-text assertion passes on failure too — and
     # `not_to_be_empty` passes *vacuously* while zero `.markdown-prose`
-    # elements exist — which is exactly the case for minutes here, because a
-    # non-streaming pipe renders its message only when it returns. (That
-    # trap cost this test its first CI run.)
-    answer = page.locator(".markdown-prose").last
-    expect(answer).to_have_text(re.compile(r"\S"), timeout=300_000)
-
-    # The feature: Reed's sources as native citation cards. Citation events
-    # merge live into the pending assistant message (chatEventHandler in
-    # Chat.svelte pushes them onto message.sources — the same path the
-    # pipe's status event already exercised on its way to the status pill).
-    # The pill starts collapsed; expand it, then open the first source's
-    # modal.
+    # elements exist, which is the case for minutes here because a
+    # non-streaming pipe renders its message only when it returns. (Those
+    # two traps cost this test its first CI run; the second run proved the
+    # failure path with Reed's 502 log.) Citation events merge live into the
+    # pending assistant message (chatEventHandler in Chat.svelte pushes them
+    # onto message.sources — the same path the pipe's status event already
+    # exercised on its way to the status pill).
     pill = page.locator('button[aria-expanded][aria-label*="source"]').last
-    expect(pill).to_be_visible(timeout=120_000)
+    expect(pill).to_be_visible(timeout=300_000)
+
+    # The pill means the pipe completed: the answer is rendered by now.
+    answer = page.locator(".markdown-prose").last
+    expect(answer).to_have_text(re.compile(r"\S"), timeout=30_000)
+
+    # Expand the collapsed pill, then open the first source's modal.
     if pill.get_attribute("aria-expanded") == "false":
         pill.click()
     source = page.locator('button[aria-label^="View source:"]').first

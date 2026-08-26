@@ -6,3 +6,11 @@ services:
   ollama:
     volumes:
       - ./.ci-cache/ollama:/root/.ollama
+
+  reed:
+    environment:
+      # The CI runner shares 4 vCPUs with a browser: cold 0.8b generation
+      # exceeds Reed's calibrated 120 s provider timeout and /v1/ask answers
+      # 502 (reed.rag.chain logs httpx.ReadTimeout). CI proves the circuit,
+      # so CI widens the knob; production keeps Reed's default.
+      REED_PROVIDER_TIMEOUT_SECONDS: "240"
