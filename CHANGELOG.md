@@ -6,33 +6,6 @@ releases contain compatible fixes.
 
 ## [Unreleased]
 
-### Changed
-
-- Track Reed 0.6.0, and take the tmpfs budget it implies. Reed now bounds how
-  many uploads may spool at once (`REED_MAX_CONCURRENT_UPLOADS`, default 4),
-  because each in-flight upload holds two copies on the temporary filesystem
-  and nothing stopped them from filling it. That bound only helps if `/tmp` is
-  sized for it, so the stack's `REED_TMPFS_SIZE` default rises from 64 MiB to
-  256 MiB: `2 x 25 MB x 4`. A tmpfs size is a cap, not a reservation, so the
-  larger number costs nothing until the space is used. The release also stops
-  shipping pip inside the Reed image — its vendored msgpack and setuptools
-  were the last findings the image scan had to report — moves the base to
-  Python 3.14.7, keeps the query embedding outside Reed's vector lock so asks,
-  searches and ingestion stop queueing behind each other, heartbeats a queued
-  SSE stream instead of letting it go silent, and stops publishing the version
-  in the OpenAPI schema on a keyed deployment.
-- Track Ollama 0.33.0. The pinning policy asks for the latest release; this
-  one fixes nothing the scanner sees, and the allowlist says so rather than
-  implying a security win: 0.32.5 and 0.33.0 report the same 38 Go findings,
-  scanned side by side.
-- Rebuild the Trivy allowlist against what the images report today, which is
-  what put the weekly rescan back in the green after three red Mondays. Every
-  entry was re-derived from a scan rather than carried forward: five stale
-  Qdrant entries are gone, and the advisories that appeared since the last
-  review are named with their exposure — util-linux `mount` TOCTOUs in a
-  container that mounts nothing, an OpenSSL QUIC-server DoS in a service that
-  speaks HTTP and gRPC. Reed 0.6.0 needs no entries at all.
-
 ### Added
 
 - The "Reed Documents" pipe: document Q&A inside the Open WebUI chat, with
@@ -63,6 +36,33 @@ releases contain compatible fixes.
   (`REED_PROVIDER_TIMEOUT_SECONDS=240`): on the 4-vCPU runner, cold 0.8b
   generation exceeds Reed's calibrated 120 s default and `/v1/ask` answers
   502. Production keeps Reed's default.
+
+### Changed
+
+- Track Reed 0.6.0, and take the tmpfs budget it implies. Reed now bounds how
+  many uploads may spool at once (`REED_MAX_CONCURRENT_UPLOADS`, default 4),
+  because each in-flight upload holds two copies on the temporary filesystem
+  and nothing stopped them from filling it. That bound only helps if `/tmp` is
+  sized for it, so the stack's `REED_TMPFS_SIZE` default rises from 64 MiB to
+  256 MiB: `2 x 25 MB x 4`. A tmpfs size is a cap, not a reservation, so the
+  larger number costs nothing until the space is used. The release also stops
+  shipping pip inside the Reed image — its vendored msgpack and setuptools
+  were the last findings the image scan had to report — moves the base to
+  Python 3.14.7, keeps the query embedding outside Reed's vector lock so asks,
+  searches and ingestion stop queueing behind each other, heartbeats a queued
+  SSE stream instead of letting it go silent, and stops publishing the version
+  in the OpenAPI schema on a keyed deployment.
+- Track Ollama 0.33.0. The pinning policy asks for the latest release; this
+  one fixes nothing the scanner sees, and the allowlist says so rather than
+  implying a security win: 0.32.5 and 0.33.0 report the same 38 Go findings,
+  scanned side by side.
+- Rebuild the Trivy allowlist against what the images report today, which is
+  what put the weekly rescan back in the green after three red Mondays. Every
+  entry was re-derived from a scan rather than carried forward: five stale
+  Qdrant entries are gone, and the advisories that appeared since the last
+  review are named with their exposure — util-linux `mount` TOCTOUs in a
+  container that mounts nothing, an OpenSSL QUIC-server DoS in a service that
+  speaks HTTP and gRPC. Reed 0.6.0 needs no entries at all.
 
 ## [0.1.1] - 2026-08-10
 
