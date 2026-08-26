@@ -310,6 +310,13 @@ jobs:
           done
           [ "$code" = "200" ] || { echo "open-webui never served (last: ${code})" >&2; exit 1; }
 
+      - name: Warm the generation model
+        run: |
+          # The first generation of a run pays for loading the model, and a
+          # browser test is the worst place to pay it: the page just waits.
+          # Ollama publishes no host port, so this goes through its own CLI.
+          docker compose exec -T ollama ollama run "${GENERATION_MODEL}" ok > /dev/null
+
       - run: uv sync --group e2e
       - run: uv run playwright install --with-deps chromium
 

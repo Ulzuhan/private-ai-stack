@@ -198,19 +198,27 @@ def test_reed_documents_model_answers_with_clickable_citations(
     expect(send).to_be_enabled(timeout=60_000)
     send.click()
 
-    # Wait on the citation pill FIRST: it is the only success-only signal.
-    # The pipe renders its error messages ("Reed could not answer…") as the
-    # answer text, so any answer-text assertion passes on failure too — and
-    # `not_to_be_empty` passes *vacuously* while zero `.markdown-prose`
-    # elements exist, which is the case for minutes here because a
-    # non-streaming pipe renders its message only when it returns. (Those
-    # two traps cost this test its first CI run; the second run proved the
-    # failure path with Reed's 502 log.) Citation events merge live into the
-    # pending assistant message (chatEventHandler in Chat.svelte pushes them
-    # onto message.sources — the same path the pipe's status event already
-    # exercised on its way to the status pill).
+    # Wait on the citation pill: it is the only success-only signal. The pipe
+    # renders its refusals and its errors as answer text, so any answer-text
+    # assertion passes on the failure path too — and `not_to_be_empty` passes
+    # *vacuously* while zero `.markdown-prose` elements exist, which is the
+    # case for minutes here because a non-streaming pipe renders its message
+    # only when it returns. (Those two traps cost this test its first CI run.)
+    # Citation events merge live into the pending assistant message
+    # (chatEventHandler in Chat.svelte pushes them onto message.sources — the
+    # same path the pipe's status event already exercised on its way to the
+    # status pill).
+    #
+    # The pipe's error text is waited on alongside it, and only to report it:
+    # a run that ends in Reed's 502 should say so in one line instead of
+    # spending the full budget to say "element not found". The budget itself
+    # is Reed's CI provider timeout (600 s) plus room for the round trip.
     pill = page.locator('button[aria-expanded][aria-label*="source"]').last
-    expect(pill).to_be_visible(timeout=300_000)
+    refusal = page.get_by_text(re.compile(r"Reed could not answer"))
+    expect(pill.or_(refusal).first).to_be_visible(timeout=660_000)
+    if refusal.count():
+        pytest.fail(f"the pipe answered with an error: {refusal.first.inner_text()}")
+    expect(pill).to_be_visible()
 
     # The pill means the pipe completed: the answer is rendered by now.
     answer = page.locator(".markdown-prose").last
