@@ -49,6 +49,7 @@ flowchart LR
     qdrant[("Qdrant<br/>vector store")]
     browser --> owui
     browser --> reed
+    owui -. "Reed Documents pipe (optional)" .-> reed
     owui --> ollama
     reed --> ollama
     reed --> qdrant
@@ -73,6 +74,29 @@ documents. File upload inside Open WebUI is disabled on purpose so documents
 always go through the RAG pipeline — retrieval you can inspect, citations you
 can click, refusals when the documents don't answer. The browser E2E keeps
 this boundary as a permanent regression check.
+
+### Asking your documents without leaving the chat
+
+Two doors, but you need not walk between them. The **Reed Documents** pipe
+puts document Q&A inside the Open WebUI chat: pick it in the model selector
+and ask. Everything that makes the answer worth trusting still happens in
+Reed — hybrid retrieval, the calibrated generation, the citation audit, the
+refusal when the evidence isn't there. The pipe proxies Reed's `/v1/ask` and
+turns each source it returns into a clickable citation card. Open WebUI does
+not become a second RAG door; it becomes a second window onto the same one,
+and the meta-tests keep it that way.
+
+Install it against a running stack:
+
+```bash
+./scripts/install-reed-pipe.sh
+```
+
+The script is idempotent — run it again after an upgrade and it refreshes the
+same function in place. It needs an Open WebUI admin API key, which
+[docs/operations.md](docs/operations.md#the-reed-documents-pipe) explains how
+to create, store and rotate. Skip it entirely and the stack is what it was:
+two doors, no pipe.
 
 ### An optional third door: your own assistant
 
@@ -130,6 +154,10 @@ Then open:
 - **Your documents** — Reed at <http://127.0.0.1:8000>. Upload a PDF,
   Markdown, DOCX or text file and ask; answers stream with clickable
   citations.
+
+To ask those same documents from the chat window instead, install the
+[Reed Documents pipe](#asking-your-documents-without-leaving-the-chat) —
+one script, optional, and Reed still does the work.
 
 ### On a Mac? Bring your own Ollama
 

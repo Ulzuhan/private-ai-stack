@@ -37,6 +37,13 @@ releases contain compatible fixes.
   generation exceeds Reed's calibrated 120 s default and `/v1/ask` answers
   502. Production keeps Reed's default.
 
+- Documentation for the pipe, which the feature needed before it could be
+  called shipped: what it is and how to install it in both READMEs, how it
+  keeps the one-RAG-door rule in `docs/architecture.md`, and the admin API
+  key — creating it, storing it, rotating it — in `docs/operations.md`, which
+  had been describing the whole integration as a roadmap item while it sat in
+  `main`.
+
 ### Changed
 
 - Track Reed 0.6.0, and take the tmpfs budget it implies. Reed now bounds how
