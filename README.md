@@ -11,11 +11,12 @@ machine: no cloud APIs, no telemetry, models run on your own hardware.
 
 ![Upload a document, ask a question, get an answer with a clickable citation — recorded by the browser E2E that runs on every PR.](assets/demo.gif)
 
-> **Status: v0.1.0.** Everything on `main` works and is verified in CI on a
+> **Status: v0.2.0.** Everything on `main` works and is verified in CI on a
 > clean runner — stack up, smoke tests, backup/restore round-trip, browser
-> E2E on both UIs. Benchmarks and the GPU and air-gap profiles are in; the
-> release publishes an attested air-gap bundle. Still on the roadmap: the
-> production override.
+> E2E on both UIs and on the pipe that puts document questions inside the
+> chat. Benchmarks and the GPU and air-gap profiles are in; the release
+> publishes an attested air-gap bundle. Still on the roadmap: the production
+> override.
 
 ## The problem
 
@@ -259,9 +260,12 @@ what the stack deliberately does **not** do:
 
 - **v0.1.0** ✅ — the stack above, with a release pipeline that publishes an
   attested air-gap bundle ([changelog](CHANGELOG.md)).
-- **v0.2** — production override (Caddy TLS + basic auth), Reed↔Open WebUI
-  integration (pipes/functions) and real observability with Langfuse,
-  instrumenting Reed upstream.
+- **v0.2.0** ✅ — document questions from inside the chat: the Reed Documents
+  pipe, installed as code and proven in the browser on every pull request,
+  with Reed still doing the retrieval, the citations and the refusals.
+- **Next** — the production override (Caddy TLS + basic auth), streamed
+  answers through the pipe, and real observability with Langfuse: with both
+  doors now reaching Reed, instrumenting it upstream covers each of them.
 
 ## License
 
