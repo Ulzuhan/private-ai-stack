@@ -21,6 +21,17 @@ releases contain compatible fixes.
   searches and ingestion stop queueing behind each other, heartbeats a queued
   SSE stream instead of letting it go silent, and stops publishing the version
   in the OpenAPI schema on a keyed deployment.
+- Track Ollama 0.33.0. The pinning policy asks for the latest release; this
+  one fixes nothing the scanner sees, and the allowlist says so rather than
+  implying a security win: 0.32.5 and 0.33.0 report the same 38 Go findings,
+  scanned side by side.
+- Rebuild the Trivy allowlist against what the images report today, which is
+  what put the weekly rescan back in the green after three red Mondays. Every
+  entry was re-derived from a scan rather than carried forward: five stale
+  Qdrant entries are gone, and the advisories that appeared since the last
+  review are named with their exposure — util-linux `mount` TOCTOUs in a
+  container that mounts nothing, an OpenSSL QUIC-server DoS in a service that
+  speaks HTTP and gRPC. Reed 0.6.0 needs no entries at all.
 
 ### Added
 

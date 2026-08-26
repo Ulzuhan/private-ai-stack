@@ -4,7 +4,7 @@ services:
   # Shared inference for the whole stack. Disabled by the BYO override when a
   # native Ollama on the host is faster (Metal on Apple Silicon).
   ollama:
-    image: ollama/ollama:0.32.5@sha256:4dea9fb511947e24a84237bb636b0203abcb2ff0d3fbc7b4ff865deb91362131
+    image: ollama/ollama:0.33.0@sha256:08ddf4b4dbfdc4fc1f5b0fe535915998581085402e307b57bb308db68460e372
     volumes:
       - ollama_models:/root/.ollama
     healthcheck:
@@ -22,7 +22,7 @@ services:
   # first start — this is what keeps `docker compose up -d` a complete command.
   # Reuses the pinned Ollama image so there is no extra image to pin or scan.
   model-init:
-    image: ollama/ollama:0.32.5@sha256:4dea9fb511947e24a84237bb636b0203abcb2ff0d3fbc7b4ff865deb91362131
+    image: ollama/ollama:0.33.0@sha256:08ddf4b4dbfdc4fc1f5b0fe535915998581085402e307b57bb308db68460e372
     environment:
       OLLAMA_HOST: http://ollama:11434
       GENERATION_MODEL: ${GENERATION_MODEL:-qwen3.5:4b}
