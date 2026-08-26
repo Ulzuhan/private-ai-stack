@@ -67,7 +67,7 @@ services:
   # Document RAG with verifiable citations, and one of the stack's two UIs.
   # Documents go here — not into the chat UI (see open-webui below).
   reed:
-    image: ghcr.io/ulzuhan/reed:0.5.1@sha256:8f4f25999181c4047f430b51ec4dc4541a7c7d467130ce4f389df085c667055d
+    image: ghcr.io/ulzuhan/reed:0.6.0@sha256:c37927552bc0b5bc8363444144913a0545c5cdfbb4bf9252791c62621b9fd588
     ports:
       # Loopback-only. The production override is the supported way to expose
       # this further; set REED_API_KEY first.
@@ -91,7 +91,7 @@ services:
       - REED_PORT=8000
       - REED_LOG_LEVEL=${REED_LOG_LEVEL:-INFO}
       - REED_API_KEY=${REED_API_KEY:-}
-      - REED_TMPFS_SIZE=${REED_TMPFS_SIZE:-64m}
+      - REED_TMPFS_SIZE=${REED_TMPFS_SIZE:-256m}
     volumes:
       - reed_data:/data
     depends_on:
@@ -116,8 +116,10 @@ services:
     init: true
     read_only: true
     tmpfs:
-      # Starlette's upload spool and Reed's staged copy can briefly coexist.
-      - /tmp:size=${REED_TMPFS_SIZE:-64m},mode=1777
+      # Starlette's upload spool and Reed's staged copy coexist for every
+      # upload in flight, and Reed 0.6.0 bounds those at four: the budget is
+      # 2 x REED_MAX_UPLOAD_MB x REED_MAX_CONCURRENT_UPLOADS.
+      - /tmp:size=${REED_TMPFS_SIZE:-256m},mode=1777
     security_opt:
       - no-new-privileges:true
     cap_drop:

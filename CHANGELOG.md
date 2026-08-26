@@ -6,6 +6,22 @@ releases contain compatible fixes.
 
 ## [Unreleased]
 
+### Changed
+
+- Track Reed 0.6.0, and take the tmpfs budget it implies. Reed now bounds how
+  many uploads may spool at once (`REED_MAX_CONCURRENT_UPLOADS`, default 4),
+  because each in-flight upload holds two copies on the temporary filesystem
+  and nothing stopped them from filling it. That bound only helps if `/tmp` is
+  sized for it, so the stack's `REED_TMPFS_SIZE` default rises from 64 MiB to
+  256 MiB: `2 x 25 MB x 4`. A tmpfs size is a cap, not a reservation, so the
+  larger number costs nothing until the space is used. The release also stops
+  shipping pip inside the Reed image — its vendored msgpack and setuptools
+  were the last findings the image scan had to report — moves the base to
+  Python 3.14.7, keeps the query embedding outside Reed's vector lock so asks,
+  searches and ingestion stop queueing behind each other, heartbeats a queued
+  SSE stream instead of letting it go silent, and stops publishing the version
+  in the OpenAPI schema on a keyed deployment.
+
 ### Added
 
 - The "Reed Documents" pipe: document Q&A inside the Open WebUI chat, with
