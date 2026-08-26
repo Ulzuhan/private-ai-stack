@@ -16,10 +16,14 @@
 # - any new finding fails CI until it is either fixed by a bump or justified
 #   in this file with the same rigor.
 
-# --- ollama/ollama:0.32.5 (latest release) ----------------------------------
-# Go stdlib and golang.org/x/* findings, fixed in newer Go toolchains; Ollama
-# has not shipped a rebuilt release. The API is reachable only from the
-# stack's own network (no host port published).
+# --- ollama/ollama:0.33.0 (latest release) ----------------------------------
+# Go standard library and golang.org/x/* findings: 38 of them, every one
+# with a fixed toolchain or module upstream and none of them carried by a
+# rebuilt Ollama image. The 0.33.0 bump (2026-08-21) reports exactly the same
+# set 0.32.5 did, scanned side by side — it fixes nothing here and is taken
+# because the pinning policy asks for the latest release, not because it
+# moves this list. Ollama publishes no host port; its only clients are Reed
+# and Open WebUI on the stack's own network. Reviewed 2026-08-26.
 CVE-2026-25679
 CVE-2026-25681
 CVE-2026-27136
@@ -32,6 +36,7 @@ CVE-2026-32285
 CVE-2026-33810
 CVE-2026-33811
 CVE-2026-33814
+CVE-2026-33818
 CVE-2026-39820
 CVE-2026-39821
 CVE-2026-39822
@@ -47,14 +52,25 @@ CVE-2026-42504
 CVE-2026-42508
 CVE-2026-46595
 CVE-2026-46597
+CVE-2026-46600
 CVE-2026-46602
-CVE-2026-46604
 CVE-2026-56852
+CVE-2026-56853
+CVE-2026-56858
+CVE-2026-56859
+CVE-2026-56860
+CVE-2026-56862
+CVE-2026-56864
+CVE-2026-56865
 
-# --- ghcr.io/open-webui/open-webui:v0.11.0 (latest release) -----------------
-# Python dependency findings (aiohttp, pillow, pyarrow, pypdf, wheel, ...),
-# fixed upstream but not yet shipped in an Open WebUI image. Loopback-only;
-# file upload (its internal RAG door) is disabled by configuration.
+# --- ghcr.io/open-webui/open-webui:v0.11.0 ----------------------------------
+# Python dependency findings (aiohttp, pillow, pyarrow, pypdf, cryptography,
+# GitPython, mcp, nltk, wheel and friends), fixed upstream but not yet shipped
+# in an Open WebUI image. Loopback-only; file upload (its internal RAG door)
+# is disabled by configuration. Still pinned at v0.11.0: the v0.11.1 published
+# 2026-08-25 moves 300 files, including the functions API the Reed pipe
+# installs through, so it earns a bump of its own rather than riding along
+# with an allowlist review. Reviewed 2026-08-26.
 CVE-2026-12061
 CVE-2026-12072
 CVE-2026-12074
@@ -76,65 +92,45 @@ CVE-2026-59205
 CVE-2026-59935
 CVE-2026-59936
 CVE-2026-59950
+CVE-2026-67422
 CVE-2026-69244
 CVE-2026-69247
 CVE-2026-69249
-GHSA-537c-gmf6-5ccf
-# GitPython <= 3.1.57, fixed in 3.1.58: five ways to smuggle unsafe options or
-# attacker-chosen names into git — option forwarding in `IndexFile.from_tree`,
-# `Repo.init(template=…)` hooks, unvalidated `.gitmodules` section names,
-# git-config option-name injection, and a bypass of the unsafe-option guard.
-# Every one of them needs Open WebUI to run a git operation on input someone
-# else chose. This deployment sets OFFLINE_MODE (no update checks, no external
-# APIs), keeps chat file upload off and binds the UI to loopback, so there is
-# no path here that clones or rewrites a repository on request. Exit: the next
-# image built on 3.1.58. Added 2026-08-08.
 GHSA-4gmw-gg2m-w46p
+GHSA-537c-gmf6-5ccf
 GHSA-9rj7-rf2p-w77r
 GHSA-hmq2-w58f-27jc
 GHSA-jm78-9fvv-mhgr
 GHSA-wvpp-8hx9-p66j
-# pymdown-extensions <= 11.0.0, fixed in 11.0.1: exponential backtracking in
-# four inline processors, so one crafted Markdown line under 50 bytes burns
-# CPU on the rendering thread. The Markdown reaching it here is the operator's
-# own messages and their local model's output on a single-user loopback stack:
-# the worst case is hanging your own container, not a shared service. Exit:
-# the next image built on 11.0.1. Added 2026-08-08.
-CVE-2026-67422
 
 # --- qdrant/qdrant:v1.19.0 (latest release) ---------------------------------
-# Dashboard npm dependencies, Rust crates (pyo3, quinn-proto) and tar. Qdrant
-# publishes no host port; access goes through Reed's API or
-# `docker compose exec`. Entries carried over from v1.18.3 — any the bump
-# fixed are inert (ignoring an absent finding is a no-op) and get pruned on
-# the next reviewed rescan.
-CVE-2026-13149
-CVE-2026-14257
-CVE-2026-59869
-CVE-2026-59873
-CVE-2026-59874
-CVE-2026-69152
-GHSA-36hh-v3qg-5jq4
-GHSA-4w2j-m93h-cj5j
-GHSA-gcfj-64vw-6mp9
-GHSA-r28c-9q8g-f849
-# js-yaml < 4.3.1 in the dashboard's npm tree: quadratic CPU burn parsing a
-# crafted !!omap YAML. Exploiting it means making the dashboard parse
-# attacker YAML — and the dashboard is reachable only from the stack's own
-# network (no host port, loopback-only deployment). The fix landed in
-# js-yaml 4.3.1 on 2026-08-06, one day after v1.19.0 was cut, so no qdrant
-# image carries it yet; the weekly rescan and the next qdrant release are
-# this entry's exit path. Added 2026-08-07.
-GHSA-5p4m-2wfm-xmqj
-# nanoid in the same dashboard tree: an infinite loop in customAlphabet and
-# customRandom when the size is zero (CVE-2026-67213, fixed in 3.3.17/5.1.6),
-# and in the non-secure generator when the size is negative (CVE-2026-67214,
-# fixed in 3.3.16/5.1.16). Both need the caller to pass a size the dashboard
-# never takes from input, and the dashboard has no published port either way.
-# Exit: the next qdrant release. Added 2026-08-08.
+# v1.19.0 (2026-08-05) is still the latest release, so none of these have an
+# image to be pinned at. Qdrant publishes no host port; access goes through
+# Reed's API or `docker compose exec`. This is the reviewed rescan the
+# previous note promised: five entries the v1.18.3 era left behind are gone
+# because the images no longer report them, and the Debian base findings that
+# appeared since are named below.
+#
+# - util-linux (CVE-2026-53612 through -53615): a TOCTOU in `mount` and three
+#   siblings across the same source package. The container mounts nothing at
+#   runtime and runs unprivileged with no-new-privileges.
+# - OpenSSL (CVE-2026-14456): unbounded memory growth in the QUIC *server*.
+#   Qdrant serves HTTP and gRPC; it never speaks QUIC.
+# - js-yaml (GHSA-5p4m-2wfm-xmqj) and nanoid (CVE-2026-67213, -67214) in the
+#   dashboard's npm tree: quadratic CPU on crafted YAML, and loops on sizes
+#   the dashboard never takes from input. The dashboard has no published port.
+#
+# Reviewed 2026-08-26.
+CVE-2026-14456
+CVE-2026-53612
+CVE-2026-53613
+CVE-2026-53614
+CVE-2026-53615
 CVE-2026-67213
 CVE-2026-67214
+GHSA-5p4m-2wfm-xmqj
 
-# --- ghcr.io/ulzuhan/reed:0.5.1 ---------------------------------------------
-# Clean as of 2026-08-09 — no exceptions needed, and the bar it sets is the
-# one this file is expected to converge to.
+# --- ghcr.io/ulzuhan/reed:0.6.0 ---------------------------------------------
+# Clean as of 2026-08-26 — no exceptions needed, and the bar it sets is the
+# one this file is expected to converge to. 0.6.0 dropped pip from the runtime
+# image, so even its vendored dependencies no longer count as surface.
