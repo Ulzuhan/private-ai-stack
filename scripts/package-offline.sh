@@ -85,12 +85,13 @@ done < <(compose config --images | sort -u)
 [ "${#images[@]}" -gt 0 ] || die "no images resolved from the compose file"
 
 # A digest-carrying pull does not always materialize the name:tag tag (the
-# classic store keeps only the RepoDigest); create any that are missing so
-# the save below archives named, loadable tags.
+# classic store keeps only the RepoDigest). Refresh even an existing tag:
+# its local image may predate the pinned digest recorded in MANIFEST.txt.
 for i in "${!images[@]}"; do
-  if ! docker image inspect "${save_refs[$i]}" >/dev/null 2>&1; then
-    docker tag "${images[$i]}" "${save_refs[$i]}"
-  fi
+  docker tag "${images[$i]}" "${save_refs[$i]}"
+  pinned_id=$(docker image inspect --format '{{.Id}}' "${images[$i]}")
+  saved_id=$(docker image inspect --format '{{.Id}}' "${save_refs[$i]}")
+  [ "$pinned_id" = "$saved_id" ] || die "archive tag does not match pinned image: ${save_refs[$i]}"
 done
 
 ollama_image=""

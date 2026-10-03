@@ -213,8 +213,23 @@ jobs:
           sudo docker system prune -af --volumes > /dev/null
           df -h /
 
+      - name: Seed a stale local tag before packaging
+        run: |
+          ref=$(docker compose config --images | sed -n '/^ollama\/ollama:/p')
+          docker pull "$ref"
+          mkdir -p "$RUNNER_TEMP/stale-image-root"
+          printf 'stale packaging fixture\n' > "$RUNNER_TEMP/stale-image-root/fixture"
+          tar -C "$RUNNER_TEMP/stale-image-root" -cf - . | docker import - "${ref%%@*}"
+          test "$(docker image inspect -f '{{.Id}}' "$ref")" != "$(docker image inspect -f '{{.Id}}' "${ref%%@*}")"
+
       - name: Build the offline bundle (connected phase)
         run: ./scripts/package-offline.sh dist
+
+      - name: Archive tags match the pinned images
+        run: |
+          while IFS= read -r ref; do
+            test "$(docker image inspect -f '{{.Id}}' "$ref")" = "$(docker image inspect -f '{{.Id}}' "${ref%%@*}")"
+          done < <(docker compose config --images | sort -u)
 
       - name: Verify the bundle checksum
         run: cd dist && sha256sum -c private-ai-stack-offline.tar.gz.sha256
