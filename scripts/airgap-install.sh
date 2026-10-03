@@ -47,7 +47,7 @@ docker volume create "${TARGET_PROJECT}_ollama_models" >/dev/null
 docker run --rm --entrypoint tar \
   -v "${TARGET_PROJECT}_ollama_models:/models" \
   -v "$PWD:/pkg:ro" \
-  "$OLLAMA_IMAGE" xzf /pkg/models.tar.gz -C /models
+  --pull never "$OLLAMA_IMAGE" xzf /pkg/models.tar.gz -C /models
 
 # Reed's volume pairs its local model cache with the document registry. An
 # existing volume means an existing deployment — never clobber its registry.
@@ -59,7 +59,7 @@ else
   docker run --rm --entrypoint tar \
     -v "${TARGET_PROJECT}_reed_data:/data" \
     -v "$PWD:/pkg:ro" \
-    "$OLLAMA_IMAGE" xzf /pkg/reed-data.tar.gz -C /data
+    --pull never "$OLLAMA_IMAGE" xzf /pkg/reed-data.tar.gz -C /data
 fi
 
 log "pinning the packaged model selection"
