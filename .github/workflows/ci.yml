@@ -215,7 +215,7 @@ jobs:
 
       - name: Seed a stale local tag before packaging
         run: |
-          ref=$(docker compose config --images | sed -n '/^ollama\/ollama:/p')
+          ref=$(docker compose config --images | sort -u | sed -n '/^ollama\/ollama:/p')
           docker pull "$ref"
           mkdir -p "$RUNNER_TEMP/stale-image-root"
           printf 'stale packaging fixture\n' > "$RUNNER_TEMP/stale-image-root/fixture"
