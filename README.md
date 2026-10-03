@@ -62,7 +62,7 @@ flowchart LR
 | model-init (one-shot) | `ollama/ollama:0.35.1` | Pulls the models on first `up` — keeps the quickstart a single command |
 | [Qdrant](https://qdrant.tech) | `qdrant/qdrant:v1.19.1` | Vector store behind the RAG service, never exposed to the host |
 | [Open WebUI](https://github.com/open-webui/open-webui) | `ghcr.io/open-webui/open-webui:v0.11.4` | General chat UI over the shared models |
-| [Reed](https://github.com/Ulzuhan/reed) | `ghcr.io/ulzuhan/reed:0.6.0` | Document RAG with citations, hybrid retrieval and its own UI |
+| [Reed](https://github.com/Ulzuhan/reed) | `ghcr.io/ulzuhan/reed:sha-1d85ae0` | Document RAG with citations, hybrid retrieval and its own UI; verified main build with the Python and base-image security updates |
 
 Every image is pinned by tag **and digest**. Containers run hardened
 (`read_only`, `cap_drop: ALL`, `no-new-privileges` where the service allows
