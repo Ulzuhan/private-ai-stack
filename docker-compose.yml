@@ -4,7 +4,7 @@ services:
   # Shared inference for the whole stack. Disabled by the BYO override when a
   # native Ollama on the host is faster (Metal on Apple Silicon).
   ollama:
-    image: ollama/ollama:0.33.3@sha256:32931b46719f673c05fdbaa81ccb26da18ea4a1c57590a754874ab28ba269eb2
+    image: ollama/ollama:0.35.1@sha256:292ee7945dfc3d5840a181f3ab86fedb1e66703e02c8af98b50f4da56b7e278c
     volumes:
       - ollama_models:/root/.ollama
     healthcheck:
@@ -22,7 +22,7 @@ services:
   # first start — this is what keeps `docker compose up -d` a complete command.
   # Reuses the pinned Ollama image so there is no extra image to pin or scan.
   model-init:
-    image: ollama/ollama:0.33.3@sha256:32931b46719f673c05fdbaa81ccb26da18ea4a1c57590a754874ab28ba269eb2
+    image: ollama/ollama:0.35.1@sha256:292ee7945dfc3d5840a181f3ab86fedb1e66703e02c8af98b50f4da56b7e278c
     environment:
       OLLAMA_HOST: http://ollama:11434
       GENERATION_MODEL: ${GENERATION_MODEL:-qwen3.5:4b}
@@ -128,7 +128,7 @@ services:
   # General chat over the shared Ollama — the stack's other UI. Its built-in
   # RAG stays off so documents always go through Reed's pipeline.
   open-webui:
-    image: ghcr.io/open-webui/open-webui:v0.11.3@sha256:41daa0cf2561a5d4c8d1ff31ee2a98d93ab4d3ac2605cac69366ff6a3374a933
+    image: ghcr.io/open-webui/open-webui:v0.11.4@sha256:9591b13f13843c7721c2b8eaf7382846c81b3ffe126526d1888d1fed50c6a33f
     ports:
       - "127.0.0.1:${WEBUI_PORT:-3000}:8080"
     environment:
